@@ -16,14 +16,9 @@ Code.defaultHighlighter = new LezerHighlighter(parser, oneDarkHighlightStyle);
 
 export default makeProject({
     scenes: [
-        codeExample,
-        video,
         browserScroll,
         demo,
         math,
-        particles,
-        camera,
-        cartesian,
         cartesianSystemExample,
     ],
     name: "Honk Animation",

@@ -180,10 +180,10 @@ export class CartesianSystem extends Node {
             this.grid().end(1, 0.8, easeInOutCubic),
         );
         yield* all(
-            this.xAxis().start(0, 0.8, easeInOutCubic),
-            this.xAxis().end(1, 0.8, easeInOutCubic),
-            this.yAxis().start(0, 0.8, easeInOutCubic),
-            this.yAxis().end(1, 0.8, easeInOutCubic),
+            this.xAxis().start(0, 0.5, easeInOutCubic),
+            this.xAxis().end(1, 0.5, easeInOutCubic),
+            this.yAxis().start(0, 0.5, easeInOutCubic),
+            this.yAxis().end(1, 0.5, easeInOutCubic),
         );
         yield* all(
             ...this.xGroup()
@@ -520,6 +520,228 @@ export class CartesianSystem extends Node {
             group: mathVectorGroup,
             logicalPos: subLogical,
             color,
+        };
+    }
+
+    public *constructVector(
+        x: number,
+        y: number,
+        color: string,
+        label: string,
+    ) {
+        const origin = this.c2s(0, 0);
+        const pX = this.c2s(x, 0);
+        const pFull = this.c2s(x, y);
+
+        const group = createRef<Node>();
+        const lineX = createRef<Line>();
+        const lineY = createRef<Line>();
+        const vector = createRef<Line>();
+        const text = createRef<Txt>();
+
+        this.contentGroup().add(
+            <Node ref={group}>
+                {/* Компонента X */}
+                <Line
+                    ref={lineX}
+                    points={[origin, origin]}
+                    stroke={"#46D9FF"} // Cyan
+                    lineWidth={2}
+                    lineDash={[5, 5]}
+                    opacity={0.6}
+                />
+                {/* Компонента Y */}
+                <Line
+                    ref={lineY}
+                    points={[pX, pX]}
+                    stroke={"#A6E22E"} // Green
+                    lineWidth={2}
+                    lineDash={[5, 5]}
+                    opacity={0.6}
+                />
+                {/* Итоговый Вектор */}
+                <Line
+                    ref={vector}
+                    points={[origin, pFull]}
+                    stroke={color}
+                    lineWidth={4}
+                    endArrow
+                    arrowSize={15}
+                    end={0} // Скрыт в начале
+                />
+                <Txt
+                    ref={text}
+                    text={label}
+                    fill={color}
+                    fontFamily={"JetBrains Mono"}
+                    fontSize={24}
+                    position={pFull.add([0, -30])}
+                    opacity={0}
+                />
+            </Node>,
+        );
+
+        // Анимация: Быстрый "чертеж"
+        // 1. Выстрел X
+        yield* lineX().points([origin, pX], 0.3, easeInOutCubic);
+        // 2. Выстрел Y
+        yield* lineY().points([pX, pFull], 0.3, easeInOutCubic);
+        // 3. Замыкание вектора
+        yield* vector().end(1, 0.4, easeInOutCubic);
+        yield* text().opacity(1, 0.4);
+
+        // 4. Убираем вспомогательные линии (очищаем чертеж)
+        yield* all(lineX().opacity(0, 0.3), lineY().opacity(0, 0.3));
+
+        return {
+            group,
+            vector,
+            pixelPos: pFull,
+            logicalPos: new Vector2(x, y),
+        };
+    }
+
+    public *explainPhysicalVector(
+        x: number,
+        y: number,
+        color: string,
+        label: string,
+    ) {
+        const origin = this.c2s(0, 0);
+        const pX = this.c2s(x, 0);
+        const pFull = this.c2s(x, y);
+
+        const group = createRef<Node>();
+        const dot = createRef<Circle>();
+
+        const lineX = createRef<Line>();
+        const labelX = createRef<Txt>();
+
+        const lineY = createRef<Line>();
+        const labelY = createRef<Txt>();
+
+        const vectorArrow = createRef<Line>();
+        const mainLabel = createRef<Txt>();
+
+        this.contentGroup().add(
+            <Node ref={group}>
+                {/* 1. ЛИНИЯ X (Тянется от начала) */}
+                <Line
+                    ref={lineX}
+                    points={[origin, pX]}
+                    stroke={"#46D9FF"}
+                    lineWidth={4}
+                
+                    end={0} // Скрыта (длина 0)
+                />
+                <Txt
+                    ref={labelX}
+                    text={`x: ${x}`}
+                    fill={"#46D9FF"}
+                    fontFamily={"JetBrains Mono"}
+                    fontSize={24}
+                    scale={0} // Скрыт (масштаб 0)
+                    position={origin.add(pX).div(2).add([0, 40])}
+                />
+
+                {/* 2. ЛИНИЯ Y (Тянется от угла) */}
+                <Line
+                    ref={lineY}
+                    points={[pX, pFull]}
+                    stroke={"#A6E22E"}
+                    lineWidth={4}
+          
+                    end={0}
+                />
+                <Txt
+                    ref={labelY}
+                    text={`y: ${y}`}
+                    fill={"#A6E22E"}
+                    fontFamily={"JetBrains Mono"}
+                    fontSize={24}
+                    scale={0}
+                    position={pX.add(pFull).div(2).add([40, 0])}
+                />
+
+                {/* 3. ВЕКТОР (Желтый) */}
+                <Line
+                    ref={vectorArrow}
+                    points={[origin, pFull]}
+                    stroke={color}
+                    lineWidth={6}
+                    endArrow
+                    arrowSize={20}
+                    end={0}
+                />
+                <Txt
+                    ref={mainLabel}
+                    text={label}
+                    fill={color}
+                    fontFamily={"JetBrains Mono"}
+                    fontSize={32}
+                    scale={0}
+                    position={pFull.add([0, -40])}
+                />
+
+                {/* 4. ТОЧКА (Курсор) */}
+                <Circle
+                    ref={dot}
+                    size={25}
+                    fill={"#FFF"}
+                    position={origin}
+                    scale={0} // Появится в начале
+                />
+            </Node>,
+        );
+
+        // --- АНИМАЦИЯ (Natural Flow) ---
+
+        // 1. Появление точки
+        yield* dot().scale(1, 0.3, easeInOutCubic);
+
+        // 2. Движение по X (Тянем линию)
+        yield* all(
+            dot().position(pX, 0.6, easeInOutCubic),
+            lineX().end(1, 0.6, easeInOutCubic),
+        );
+        yield* labelX().scale(1, 0.2, createEaseOutBack(1.5)); // "Pop" эффект для текста
+        yield* waitFor(0.1);
+
+        // 3. Движение по Y (Тянем вторую линию)
+        yield* all(
+            dot().position(pFull, 0.6, easeInOutCubic),
+            lineY().end(1, 0.6, easeInOutCubic),
+        );
+        yield* labelY().scale(1, 0.2, createEaseOutBack(1.5));
+        yield* waitFor(0.1);
+
+        // 4. УДАР ВЕКТОРА (Snap!)
+        // Вектор резко прочерчивается
+        yield* vectorArrow().end(1, 0.4, easeInOutCubic);
+        yield* mainLabel().scale(1, 0.3, createEaseOutBack(1.5));
+
+        // 5. ТРАНСФОРМАЦИЯ (Втягивание)
+        // Линии X и Y не исчезают, они "убегают" обратно в точки, освобождая место вектору
+        yield* all(
+            // Линия X сжимается обратно к началу (или к концу, как решишь)
+            // start(1) заставит её "догнать" конец и исчезнуть вправо
+            // end(0) заставит её втянуться влево
+            lineX().end(0, 0.5, easeInOutCubic),
+            labelX().scale(0, 0.3), // Текст схлопывается
+
+            lineY().end(0, 0.5, easeInOutCubic), // Линия Y втягивается вниз
+            labelY().scale(0, 0.3),
+
+            // Точка тоже схлопывается, так как теперь есть стрелка
+            dot().scale(0, 0.3),
+        );
+
+        return {
+            group,
+            arrow: vectorArrow,
+            label: mainLabel,
+            pixelPos: pFull,
+            logicalPos: new Vector2(x, y),
         };
     }
 }
