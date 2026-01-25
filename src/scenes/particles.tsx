@@ -69,7 +69,7 @@ export default makeScene2D(function* (view) {
 
   
     yield* amplitude(50, 1);
-    yield* frequency(0.05, 1); 
+    yield* frequency(0.01, 1); 
     yield* sineProgress(0, 1); 
 
   

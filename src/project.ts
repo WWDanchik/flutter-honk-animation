@@ -20,6 +20,8 @@ export default makeProject({
         demo,
         math,
         cartesianSystemExample,
+        particles,
+
     ],
     name: "Honk Animation",
 });

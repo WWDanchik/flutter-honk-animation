@@ -11,11 +11,17 @@ import {
     all,
     createEaseOutBack,
     createRef,
+    createSignal,
     delay,
     easeInOutCubic,
+    easeOutBack,
+    Matrix2D,
     range,
     Reference,
     sequence,
+    SimpleSignal,
+    tween,
+    useLogger,
     Vector2,
     waitFor,
 } from "@motion-canvas/core";
@@ -37,6 +43,16 @@ export type ManagedVector = {
     color: string;
 };
 
+export interface SineWaveControls {
+    frequency: SimpleSignal<number>;
+    amplitude: SimpleSignal<number>;
+    phase: SimpleSignal<number>;
+    start: SimpleSignal<Vector2>; // <--- Новый сигнал
+    end: SimpleSignal<Vector2>; // <--- Новый сигнал
+    line: Reference<Line>;
+    distanceLine: Reference<Line>;
+}
+
 export class CartesianSystem extends Node {
     private grid = createRef<Grid>();
     private xAxis = createRef<Line>();
@@ -44,19 +60,22 @@ export class CartesianSystem extends Node {
     private xGroup = createRef<Node>();
     private yGroup = createRef<Node>();
     public contentGroup = createRef<Node>();
+    public container = createRef<Node>();
 
-    public readonly spacing: number;
     public readonly viewWidth: number;
     public readonly viewHeight: number;
+    public spacing: SimpleSignal<number>;
+    public tricksFontSize = createSignal(16);
+    public usePiLabels = createSignal(false);
 
     constructor(props: CartesianSystemProps) {
         super(props);
         this.viewWidth = props.width;
         this.viewHeight = props.height;
-        this.spacing = props.spacing ?? 80;
+        this.spacing = createSignal(props.spacing ?? 80);
 
         this.add(
-            <>
+            <Node ref={this.container}>
                 <Rect
                     width={this.viewWidth}
                     height={this.viewHeight}
@@ -67,7 +86,7 @@ export class CartesianSystem extends Node {
                     ref={this.grid}
                     width={this.viewWidth}
                     height={this.viewHeight}
-                    spacing={this.spacing}
+                    spacing={() => this.spacing()}
                     stroke={"#444"}
                     lineWidth={1}
                     start={0.5}
@@ -105,22 +124,38 @@ export class CartesianSystem extends Node {
                 />
 
                 <Node ref={this.contentGroup} />
-            </>,
+            </Node>,
         );
         this.generateTicks();
+    }
+    private getLabelText(logicalIndex: number, isVertical: boolean): string {
+        const n = logicalIndex;
+
+        if (this.usePiLabels() && !isVertical) {
+            if (n === 0) return "0";
+            if (n === 1) return "π";
+            if (n === -1) return "-π";
+            return `${n}π`;
+        }
+        return n.toString();
     }
 
     private generateTicks() {
         const tickLen = 20;
+        const maxStepsX = Math.ceil(this.viewWidth / 2 / 50);
+        const maxStepsY = Math.ceil(this.viewHeight / 2 / 50);
+        range(-maxStepsX, maxStepsX + 1).forEach((i) => {
+            if (i === 0) return;
 
-        range(
-            Math.floor(-this.viewWidth / 2 / this.spacing) * this.spacing,
-            Math.ceil(this.viewWidth / 2 / this.spacing) * this.spacing,
-            this.spacing,
-        ).forEach((x) => {
-            if (Math.abs(x) < 0.1) return;
             this.xGroup().add(
-                <Node x={x} scale={0}>
+                <Node
+                    x={() => i * this.spacing()}
+                    opacity={() =>
+                        Math.abs(i * this.spacing()) > this.viewWidth / 2
+                            ? 0
+                            : 1
+                    }
+                >
                     <Line
                         points={[
                             [0, -tickLen / 2],
@@ -133,22 +168,25 @@ export class CartesianSystem extends Node {
                         y={25}
                         fill={"#CCC"}
                         fontFamily={"JetBrains Mono"}
-                        fontSize={16}
-                        text={(x / this.spacing).toString()}
+                        fontSize={() => this.tricksFontSize()}
+                        text={() => this.getLabelText(i, false)}
                         justifyContent={"center"}
                     />
                 </Node>,
             );
         });
 
-        range(
-            Math.floor(-this.viewHeight / 2 / this.spacing) * this.spacing,
-            Math.ceil(this.viewHeight / 2 / this.spacing) * this.spacing,
-            this.spacing,
-        ).forEach((y) => {
-            if (Math.abs(y) < 0.1) return;
+        range(-maxStepsY, maxStepsY + 1).forEach((i) => {
+            if (i === 0) return;
             this.yGroup().add(
-                <Node y={y} scale={0}>
+                <Node
+                    y={() => -i * this.spacing()}
+                    opacity={() =>
+                        Math.abs(i * this.spacing()) > this.viewHeight / 2
+                            ? 0
+                            : 1
+                    }
+                >
                     <Line
                         points={[
                             [-tickLen / 2, 0],
@@ -161,8 +199,8 @@ export class CartesianSystem extends Node {
                         x={-35}
                         fill={"#CCC"}
                         fontFamily={"JetBrains Mono"}
-                        fontSize={16}
-                        text={(-y / this.spacing).toString()}
+                        fontSize={() => this.tricksFontSize()}
+                        text={() => this.getLabelText(i, true)}
                         alignItems={"center"}
                     />
                 </Node>,
@@ -171,7 +209,7 @@ export class CartesianSystem extends Node {
     }
 
     public c2s(x: number, y: number): Vector2 {
-        return new Vector2(x * this.spacing, -y * this.spacing);
+        return new Vector2(x * this.spacing(), -y * this.spacing());
     }
 
     public *setup() {
@@ -411,7 +449,6 @@ export class CartesianSystem extends Node {
         const line = createRef<Line>();
         const label = createRef<Txt>();
 
-        // <--- ИСПРАВЛЕНИЕ ЗДЕСЬ: Создаем ссылку явно как Circle
         const head = createRef<Circle>();
 
         const endPixel = this.c2s(x, y);
@@ -430,7 +467,6 @@ export class CartesianSystem extends Node {
                     arrowSize={20}
                 />
 
-                {/* <--- ИСПРАВЛЕНИЕ ЗДЕСЬ: Привязываем ссылку */}
                 <Circle ref={head} x={0} y={0} size={0} fill={color} />
 
                 <Txt
@@ -453,7 +489,7 @@ export class CartesianSystem extends Node {
 
         return {
             line,
-            head, // <--- Теперь это Reference<Circle>, а не Reference<unknown>
+            head,
             label,
             group,
             logicalPos: new Vector2(x, y),
@@ -625,14 +661,12 @@ export class CartesianSystem extends Node {
 
         this.contentGroup().add(
             <Node ref={group}>
-                {/* 1. ЛИНИЯ X (Тянется от начала) */}
                 <Line
                     ref={lineX}
                     points={[origin, pX]}
                     stroke={"#46D9FF"}
                     lineWidth={4}
-                
-                    end={0} // Скрыта (длина 0)
+                    end={0}
                 />
                 <Txt
                     ref={labelX}
@@ -644,13 +678,11 @@ export class CartesianSystem extends Node {
                     position={origin.add(pX).div(2).add([0, 40])}
                 />
 
-                {/* 2. ЛИНИЯ Y (Тянется от угла) */}
                 <Line
                     ref={lineY}
                     points={[pX, pFull]}
                     stroke={"#A6E22E"}
                     lineWidth={4}
-          
                     end={0}
                 />
                 <Txt
@@ -663,7 +695,6 @@ export class CartesianSystem extends Node {
                     position={pX.add(pFull).div(2).add([40, 0])}
                 />
 
-                {/* 3. ВЕКТОР (Желтый) */}
                 <Line
                     ref={vectorArrow}
                     points={[origin, pFull]}
@@ -683,31 +714,25 @@ export class CartesianSystem extends Node {
                     position={pFull.add([0, -40])}
                 />
 
-                {/* 4. ТОЧКА (Курсор) */}
                 <Circle
                     ref={dot}
                     size={25}
                     fill={"#FFF"}
                     position={origin}
-                    scale={0} // Появится в начале
+                    scale={0}
                 />
             </Node>,
         );
 
-        // --- АНИМАЦИЯ (Natural Flow) ---
-
-        // 1. Появление точки
         yield* dot().scale(1, 0.3, easeInOutCubic);
 
-        // 2. Движение по X (Тянем линию)
         yield* all(
             dot().position(pX, 0.6, easeInOutCubic),
             lineX().end(1, 0.6, easeInOutCubic),
         );
-        yield* labelX().scale(1, 0.2, createEaseOutBack(1.5)); // "Pop" эффект для текста
+        yield* labelX().scale(1, 0.2, createEaseOutBack(1.5));
         yield* waitFor(0.1);
 
-        // 3. Движение по Y (Тянем вторую линию)
         yield* all(
             dot().position(pFull, 0.6, easeInOutCubic),
             lineY().end(1, 0.6, easeInOutCubic),
@@ -715,24 +740,16 @@ export class CartesianSystem extends Node {
         yield* labelY().scale(1, 0.2, createEaseOutBack(1.5));
         yield* waitFor(0.1);
 
-        // 4. УДАР ВЕКТОРА (Snap!)
-        // Вектор резко прочерчивается
         yield* vectorArrow().end(1, 0.4, easeInOutCubic);
         yield* mainLabel().scale(1, 0.3, createEaseOutBack(1.5));
 
-        // 5. ТРАНСФОРМАЦИЯ (Втягивание)
-        // Линии X и Y не исчезают, они "убегают" обратно в точки, освобождая место вектору
         yield* all(
-            // Линия X сжимается обратно к началу (или к концу, как решишь)
-            // start(1) заставит её "догнать" конец и исчезнуть вправо
-            // end(0) заставит её втянуться влево
             lineX().end(0, 0.5, easeInOutCubic),
-            labelX().scale(0, 0.3), // Текст схлопывается
+            labelX().scale(0, 0.3),
 
-            lineY().end(0, 0.5, easeInOutCubic), // Линия Y втягивается вниз
+            lineY().end(0, 0.5, easeInOutCubic),
             labelY().scale(0, 0.3),
 
-            // Точка тоже схлопывается, так как теперь есть стрелка
             dot().scale(0, 0.3),
         );
 
@@ -743,5 +760,328 @@ export class CartesianSystem extends Node {
             pixelPos: pFull,
             logicalPos: new Vector2(x, y),
         };
+    }
+
+    public *drawSine() {
+        const sineLine = createRef<Line>();
+
+        this.contentGroup().add(
+            <Line
+                points={() => {
+                    return [];
+                }}
+            />,
+        );
+    }
+
+    public *switchToPi(duration: number = 0.6) {
+        yield* all(
+            ...this.xGroup()
+                .children()
+                .map((c) => c.scale(0.8, duration / 2).to(1, duration / 2)),
+            ...this.yGroup()
+                .children()
+                .map((c) => c.scale(0.8, duration / 2).to(1, duration / 2)),
+
+            delay(duration / 2, this.usePiLabels(true, 0)),
+        );
+    }
+
+    public *spawnDynamicSine(
+        initialStart: Vector2,
+        initialEnd: Vector2,
+        initialFreq: number = 0,
+        initialAmp: number = 40,
+    ): Generator<any, SineWaveControls, any> {
+        const startSig = createSignal(initialStart);
+        const endSig = createSignal(initialEnd);
+
+        const frequency = createSignal(initialFreq);
+        const amplitude = createSignal(initialAmp);
+        const phase = createSignal(0);
+
+        const sineLine = createRef<Line>();
+        const distanceLine = createRef<Line>();
+
+        this.contentGroup().add(
+            <>
+                <Line
+                    ref={distanceLine}
+                    opacity={0}
+                    stroke={"#ff5555"}
+                    lineWidth={4}
+                    points={() => [
+                        this.c2s(startSig().x, startSig().y),
+                        this.c2s(endSig().x, endSig().y),
+                    ]}
+                />
+                <Line
+                    ref={sineLine}
+                    stroke={"#ff5555"}
+                    lineWidth={4}
+                    end={0}
+                    points={() => {
+                        const s = startSig();
+                        const e = endSig();
+
+                        const startPixel = this.c2s(s.x, s.y);
+                        const endPixel = this.c2s(e.x, e.y);
+
+                        const diff = endPixel.sub(startPixel);
+
+                        if (diff.magnitude < 0.001) return [startPixel];
+
+                        const direction = diff.normalized;
+
+                        const normal = new Vector2(direction.y, -direction.x);
+
+                        const points: Vector2[] = [];
+                        const segments = 200;
+
+                        const freqVal = frequency();
+                        const ampVal = amplitude();
+                        const phaseVal = phase();
+
+                        const errorAtEnd = Math.sin(1 * freqVal + phaseVal);
+
+                        for (let i = 0; i <= segments; i++) {
+                            const t = i / segments;
+
+                            const basePos = Vector2.lerp(
+                                startPixel,
+                                endPixel,
+                                t,
+                            );
+
+                            const rawSine = Math.sin(t * freqVal + phaseVal);
+                            const correctedSine = rawSine - errorAtEnd * t;
+
+                            const offset = normal.scale(correctedSine * ampVal);
+                            points.push(basePos.add(offset));
+                        }
+                        return points;
+                    }}
+                />
+            </>,
+        );
+
+        yield* waitFor(0);
+
+        return {
+            frequency,
+            amplitude,
+            line: sineLine,
+            phase,
+            distanceLine,
+            start: startSig,
+            end: endSig,
+        };
+    }
+
+    public *explainNormalConstruction(
+        start: Vector2,
+        end: Vector2,
+        duration: number = 2,
+    ) {
+        // 1. Подготовка координат
+        const startPx = this.c2s(start.x, start.y);
+        const endPx = this.c2s(end.x, end.y);
+        const diff = endPx.sub(startPx);
+        const center = startPx.add(endPx).div(2); // Центр для демонстрации круга
+
+        // Группа для объяснения
+        const demoGroup = createRef<Node>();
+        this.contentGroup().add(
+            <Node ref={demoGroup} position={center} scale={0} />,
+        );
+
+        yield* demoGroup().scale(1, 0.5, easeOutBack);
+
+        // 2. Рисуем Единичную окружность (Unit Circle)
+        // Для наглядности радиус круга делаем равным нашему spacing (как бы 1 клетка)
+        const radius = this.spacing();
+        const circle = createRef<Circle>();
+        const angleIndicator = createRef<Line>();
+
+        demoGroup().add(
+            <>
+                <Circle
+                    ref={circle}
+                    size={radius * 2}
+                    stroke="#666"
+                    lineWidth={2}
+                    lineDash={[5, 5]}
+                    opacity={0}
+                />
+                <Txt
+                    text="Unit Circle (r=1)"
+                    y={radius + 30}
+                    fill="#666"
+                    fontSize={20}
+                    fontFamily="JetBrains Mono"
+                    opacity={0.5}
+                />
+            </>,
+        );
+
+        yield* circle().opacity(1, 0.5);
+
+        // 3. Показываем исходный вектор (Direction)
+        // Он пока длинный (просто направление линии)
+        const dirVector = createRef<Line>();
+        const dirLabel = createRef<Txt>();
+
+        // Нормализованное направление (длина 1)
+        const normalizedDir = diff.normalized.scale(radius);
+
+        demoGroup().add(
+            <Node rotation={(Math.atan2(diff.y, diff.x) * 180) / Math.PI}>
+                <Line
+                    ref={dirVector}
+                    points={[
+                        [0, 0],
+                        [radius, 0],
+                    ]} // Рисуем локально горизонтально, но Node повернут
+                    stroke="#46D9FF" // Cyan
+                    lineWidth={4}
+                    endArrow
+                    arrowSize={15}
+                    end={0}
+                />
+                <Txt
+                    ref={dirLabel}
+                    text="Direction"
+                    y={20}
+                    x={radius / 2}
+                    fill="#46D9FF"
+                    fontSize={20}
+                    fontFamily="JetBrains Mono"
+                    opacity={0}
+                    rotation={(-Math.atan2(diff.y, diff.x) * 180) / Math.PI} // Текст держим прямо
+                />
+            </Node>,
+        );
+
+        yield* all(dirVector().end(1, 0.5), dirLabel().opacity(1, 0.5));
+
+        yield* waitFor(0.5);
+
+        // 4. ПОВОРОТ НА 90 ГРАДУСОВ (Самый сок!)
+        // Мы клонируем вектор и вращаем его
+        const normalVector = createRef<Line>();
+        const normalLabel = createRef<Txt>();
+
+        // Группа для нормали, которую мы будем вращать
+        const normalGroup = createRef<Node>();
+
+        demoGroup().add(
+            <Node
+                ref={normalGroup}
+                rotation={(Math.atan2(diff.y, diff.x) * 180) / Math.PI} // Начало там же, где Direction
+            >
+                <Line
+                    ref={normalVector}
+                    points={[
+                        [0, 0],
+                        [radius, 0],
+                    ]}
+                    stroke="#ff5555" // Red
+                    lineWidth={4}
+                    endArrow
+                    arrowSize={15}
+                    opacity={0}
+                />
+                <Txt
+                    ref={normalLabel}
+                    text="Normal (-y, x)"
+                    y={-20}
+                    x={radius / 2}
+                    fill="#ff5555"
+                    fontSize={20}
+                    fontFamily="JetBrains Mono"
+                    opacity={0}
+                    scale={0}
+                />
+            </Node>,
+        );
+
+        // Показываем "призрак" вектора поверх синего
+        normalVector().opacity(1);
+
+        yield* waitFor(0.3);
+
+        // АНИМАЦИЯ ПОВОРОТА
+        // Вращаем группу на -90 градусов (или +90 в зависимости от системы)
+        yield* all(
+            normalGroup().rotation(
+                normalGroup().rotation() - 90,
+                1.5,
+                easeInOutCubic,
+            ),
+            normalVector().stroke("#ff5555", 0.5), // Меняем цвет на красный в процессе
+            normalLabel().opacity(1, 0.5),
+            normalLabel().scale(1, 0.5, easeOutBack),
+        );
+
+        // Показываем угол 90 градусов
+        const angle = createRef<Line>();
+        normalGroup().add(
+            <Line
+                ref={angle}
+                points={[
+                    [20, 0],
+                    [20, 20],
+                    [0, 20],
+                ]} // Уголок
+                stroke="#FFF"
+                lineWidth={2}
+                opacity={0}
+            />,
+        );
+        yield* angle().opacity(1, 0.3);
+
+        yield* waitFor(1);
+
+        // 5. ДЕМОНСТРАЦИЯ СИНУСА (Рост вектора)
+        // Теперь мы показываем, как этот красный вектор меняет длину
+
+        const sineLabel = createRef<Txt>();
+        demoGroup().add(
+            <Txt
+                ref={sineLabel}
+                text="sin(t) * Amplitude"
+                y={-radius - 40}
+                fill="#FFF"
+                fontSize={24}
+                fontFamily="JetBrains Mono"
+                opacity={0}
+            />,
+        );
+        yield* sineLabel().opacity(1, 0.5);
+
+        // Пульсация длины вектора по синусу
+        // Мы используем tween для имитации прохода от 0 до PI
+        yield* tween(2, (value) => {
+            // value идет от 0 до 1
+            // Нам нужно simulirovat' sin(0 -> PI)
+            const t = value * Math.PI;
+            const sinVal = Math.sin(t);
+
+            // Меняем длину красной стрелки
+            // radius * 2 - это условная амплитуда для демонстрации
+            const currentLen = sinVal * (radius * 1.5);
+
+            normalVector().points([
+                [0, 0],
+                [currentLen, 0],
+            ]);
+
+            // Если длина почти 0, скрываем стрелку, чтоб не артефачила
+            normalVector().opacity(currentLen < 1 ? 0 : 1);
+        });
+
+        // Чистим за собой (или оставляем, как решишь)
+        yield* demoGroup().opacity(0, 0.5);
+        demoGroup().remove();
     }
 }
