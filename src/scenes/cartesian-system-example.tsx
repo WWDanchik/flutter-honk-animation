@@ -1,4 +1,12 @@
-import { makeScene2D, Rect, Txt, Latex, Line, Circle } from "@motion-canvas/2d";
+import {
+    makeScene2D,
+    Rect,
+    Txt,
+    Latex,
+    Line,
+    Circle,
+    Layout,
+} from "@motion-canvas/2d";
 import {
     all,
     createRef,
@@ -12,7 +20,10 @@ import {
     linear,
     easeInOutExpo,
     easeInQuad,
-    delay, // Для эффекта "Pop"
+    delay,
+    tween,
+    sin,
+    ThreadGenerator, // Для эффекта "Pop"
 } from "@motion-canvas/core";
 import { CartesianSystem } from "../components/cartesian-system";
 
@@ -130,15 +141,15 @@ export default makeScene2D(function* (view) {
     const sliderGroup = createRef<Rect>();
     const sliderContainer = createRef<Rect>();
     const sliderWidth = 500;
+    const sliderWrapper = createRef<Rect>();
 
     view.add(
         <Rect
             ref={sliderGroup}
-            y={400}
+            y={350}
             layout
             direction="column"
             alignItems="center"
-            gap={30}
             padding={[30, 50]}
             fill={"#141414"}
             stroke={"#333"}
@@ -148,30 +159,14 @@ export default makeScene2D(function* (view) {
             zIndex={100}
             shadowBlur={20}
             shadowColor={"rgba(0,0,0,0.5)"}
+            width={700}
         >
-            <Latex
-                height={50}
-                margin={[0, 0, 10, 0]}
-                fill="white"
-                fontSize={15}
-                tex={`
-                    {\\color{#999} \\vec{P}(t) = } 
-                    {\\color{white} \\vec{Start}} 
-                    + 
-                    ( {\\color{#FF647F} \\vec{End}} - {\\color{white} \\vec{Start}} ) 
-                    \\cdot 
-                    {\\color{#ff00ff} t}
-                `}
-            />
-
-            {/* 2. СЛАЙДЕР (Скрыт отдельно) */}
-            <Rect>
+            <Rect ref={sliderWrapper} height={40}>
                 <Rect
-                    ref={sliderContainer} // <--- ДОБАВИЛ REF
+                    ref={sliderContainer}
                     width={sliderWidth}
-                    height={40}
                     layout={false}
-                    opacity={0} // <--- СКРЫТ ИЗНАЧАЛЬНО
+                    opacity={0}
                 >
                     <Rect
                         width={sliderWidth}
@@ -217,10 +212,30 @@ export default makeScene2D(function* (view) {
             </Rect>
         </Rect>,
     );
+    const baseLatex = createRef<Latex>();
+    sliderGroup().add(
+        <Latex
+            ref={baseLatex}
+            tex={`
+                {\\color{#999} \\vec{P}_{base}(t) = } 
+                {\\color{white} \\vec{Start}} 
+                + 
+                ( {\\color{#FF647F} \\vec{End}} - {\\color{white} \\vec{Start}} ) 
+                \\cdot 
+                {\\color{#ff00ff} t}
+            `}
+            fill="white"
+            height={45}
+            opacity={0}
+        />,
+    );
 
+    yield* all(
+        baseLatex().opacity(1, 0.8, easeInOutCubic),
+        sliderContainer().opacity(1, 0.8, easeInOutCubic),
+    );
     yield* sliderGroup().opacity(1, 0.8, easeInOutCubic);
     yield* waitFor(1.5);
-    yield* sliderContainer().opacity(1, 0.8, easeInOutCubic);
 
     yield* t(1, 2, easeInOutCubic);
     yield* waitFor(0.5);
@@ -238,7 +253,7 @@ export default makeScene2D(function* (view) {
         new Vector2(2, 1),
         new Vector2(7, 4),
         0,
-        80,
+        system().spacing(),
     );
     yield* wave.line().end(1, 0.8, easeInOutExpo);
 
@@ -261,9 +276,7 @@ export default makeScene2D(function* (view) {
         wave.end(new Vector2(2, 0), moveDuration, easeInOutExpo),
 
         wave.frequency(2 * Math.PI, moveDuration, easeInOutExpo),
-
-        wave.amplitude(100, moveDuration * 0.8, easeInOutExpo),
-
+        wave.amplitude(400, moveDuration * 0.8, easeInOutExpo),
         delay(
             moveDuration * 0.6,
             all(
@@ -323,53 +336,59 @@ export default makeScene2D(function* (view) {
                 end={0}
             />,
         );
-    const latexNode = sliderGroup().children()[0] as Latex;
 
-    latexNode.tex(`
-        {\\color{#46D9FF} \\vec{D}} = 
-        {\\color{#FF647F} \\vec{End}} - {\\color{white} \\vec{Start}}
-    `);
+    const diffLatex = createRef<Latex>();
+    sliderGroup().add(
+        <Latex
+            ref={diffLatex}
+            tex={`
+                {\\color{#46D9FF} \\vec{D}} = 
+                {\\color{#FF647F} \\vec{End}} - {\\color{white} \\vec{Start}}
+            `}
+            fill="white"
+            height={45}
+            opacity={0}
+            margin={[5, 0, 0, 0]}
+        />,
+    );
+    yield* diffLatex().opacity(1, 0.6);
 
     yield* diffArrow().end(1, 1, easeInOutCubic);
-
+    yield* sliderWrapper().layout(false, 0);
     yield* all(
         sliderGroup().opacity(1, 0.8, createEaseOutBack(1.2)),
         sliderContainer().opacity(0, 0),
     );
+    yield* sliderContainer().height(0, 1);
 
     yield* waitFor(1);
 
-    yield* waitFor(0.5);
-
     const normLatex = createRef<Latex>();
-
     sliderGroup().add(
         <Latex
             ref={normLatex}
-            width={600}
-            margin={[20, 0, 0, 0]}
-            fill="white"
-            opacity={0} // Скрыт при создании
             tex={`
                 {\\color{white} \\vec{u}} = 
                 \\text{norm}( {\\color{#46D9FF} \\vec{D}} )
             `}
+            fill="white"
+            height={45}
+            opacity={0}
+            margin={[5, 0, 0, 0]}
         />,
     );
-
     yield* normLatex().opacity(1, 0.6);
-
     const ghostArrow = createRef<Line>();
     system()
         .contentGroup()
         .add(
             <Line
                 ref={ghostArrow}
-                points={[adjustedStart, adjustedEnd]} // Те же точки
+                points={[adjustedStart, adjustedEnd]}
                 stroke="#46D9FF"
                 lineWidth={2}
-                lineDash={[10, 10]} // Пунктир
-                opacity={0} // Сначала невидимый
+                lineDash={[10, 10]}
+                opacity={0}
                 endArrow
                 arrowSize={15}
             />,
@@ -377,33 +396,380 @@ export default makeScene2D(function* (view) {
 
     ghostArrow().opacity(0.3);
 
-    const unitCircle = createRef<Circle>();
     const unitRadius = system().spacing();
-
-    system()
-        .contentGroup()
-        .add(
-            <Circle
-                ref={unitCircle}
-                position={adjustedStart}
-                size={0}
-                stroke="#666"
-                lineWidth={2}
-                lineDash={[5, 5]}
-                opacity={0.5}
-                zIndex={-1}
-            />,
-        );
-
-    yield* unitCircle().size(unitRadius * 2, 0.8, createEaseOutBack(1.2));
 
     const unitTip = adjustedStart.add(direction.scale(unitRadius));
 
     yield* all(
         diffArrow().points([adjustedStart, unitTip], 1, easeInOutCubic),
-
         diffArrow().stroke("#FFF", 1),
     );
 
     yield* waitFor(0.5);
+
+    const rotLatex = createRef<Latex>();
+    sliderGroup().add(
+        <Latex
+            ref={rotLatex}
+            tex={`
+                {\\color{#A6E22E} \\vec{n}} = 
+                \\text{rot}_{90^\\circ}( {\\color{white} \\vec{u}} )
+            `}
+            fill="white"
+            height={45}
+            opacity={0}
+            margin={[5, 0, 0, 0]}
+        />,
+    );
+    yield* rotLatex().opacity(1, 0.6);
+
+    const uVector = direction.scale(unitRadius);
+    const startRad = Math.atan2(uVector.y, uVector.x);
+    const startDeg = (startRad * 180) / Math.PI;
+    const endRad = startRad - Math.PI / 2;
+    const endDeg = startDeg - 90;
+
+    const normalArrow = createRef<Line>();
+    const traceArc = createRef<Circle>();
+    const angleText = createRef<Txt>();
+
+    system()
+        .contentGroup()
+        .add(
+            <>
+                <Circle
+                    ref={traceArc}
+                    position={adjustedStart}
+                    size={unitRadius * 2}
+                    startAngle={startDeg}
+                    endAngle={startDeg}
+                    stroke="#A6E22E"
+                    lineWidth={2}
+                    lineDash={[5, 5]}
+                    opacity={0.6}
+                />
+                <Line
+                    ref={normalArrow}
+                    points={[adjustedStart, adjustedStart.add(uVector)]}
+                    stroke="#A6E22E"
+                    lineWidth={4}
+                    endArrow
+                    arrowSize={15}
+                    opacity={0}
+                />
+                <Txt
+                    ref={angleText}
+                    text="0°"
+                    fill="#A6E22E"
+                    fontSize={24}
+                    fontFamily="JetBrains Mono"
+                    opacity={0}
+                />
+            </>,
+        );
+
+    normalArrow().opacity(1);
+
+    yield* tween(1.5, (value) => {
+        const t = easeInOutCubic(value);
+
+        const currentRad = map(startRad, endRad, t);
+        const currentDeg = map(startDeg, endDeg, t);
+
+        const currentVec = Vector2.fromRadians(currentRad).scale(unitRadius);
+        normalArrow().points([adjustedStart, adjustedStart.add(currentVec)]);
+
+        traceArc().endAngle(currentDeg);
+
+        const angleValue = Math.round(map(0, 90, t));
+        angleText().text(`${angleValue}°`);
+
+        const midRad = map(startRad, currentRad, 0.5);
+
+        const textPos = adjustedStart.add(
+            Vector2.fromRadians(midRad).scale(unitRadius + 40),
+        );
+        angleText().position(textPos);
+
+        if (value < 0.1) {
+            angleText().opacity(map(0, 1, value * 10));
+        }
+    });
+
+    const cornerSize = 20;
+    const vBase = direction.scale(cornerSize);
+    const vNorm = Vector2.fromRadians(endRad).scale(cornerSize);
+    const cornerTip = adjustedStart.add(vBase).add(vNorm);
+
+    const perpSign = createRef<Line>();
+    system()
+        .contentGroup()
+        .add(
+            <Line
+                ref={perpSign}
+                points={[
+                    adjustedStart.add(vBase),
+                    cornerTip,
+                    adjustedStart.add(vNorm),
+                ]}
+                stroke="#FFF"
+                lineWidth={2}
+                end={0}
+                opacity={0.8}
+            />,
+        );
+
+    yield* all(
+        perpSign().end(1, 0.5, easeInOutCubic),
+        angleText().opacity(0, 0.5),
+        traceArc().opacity(0, 0.5),
+    );
+
+    yield* waitFor(1);
+
+    yield* all(
+        perpSign().end(0, 0.5, easeInOutCubic),
+        diffArrow().end(0, 0.5, easeInOutCubic),
+    );
+
+    yield* waitFor(1);
+
+    const sineLatex = createRef<Latex>();
+
+    sliderGroup().add(
+        <Latex
+            ref={sineLatex}
+            tex={`
+                {\\color{white} \\vec{P}(t)} = 
+                {\\color{#999} \\vec{P}_{base}(t)} + 
+                {\\color{#A6E22E} \\vec{n} \\cdot A \\sin(\\pi t)}
+            `}
+            fill="white"
+            height={45}
+            opacity={0}
+            margin={[5, 0, 0, 0]} // Чуть-чуть отступа
+        />,
+    );
+
+    yield* all(sineLatex().opacity(1, 0.6));
+    const waveTrace = createRef<Line>();
+    system()
+        .contentGroup()
+        .add(
+            <Line
+                ref={waveTrace}
+                points={[adjustedStart]} // Начальная точка
+                stroke="#ff5555"
+                lineWidth={4}
+                zIndex={-1}
+            />,
+        );
+
+    // 1. Сбрасываем сигнал времени в 0 (чтобы слайдер и логика вернулись в начало)
+    t(0);
+
+    yield* all(
+        sliderContainer().opacity(1, 0.5),
+        sliderWrapper().layout(true, 0),
+        normalArrow().opacity(1),
+    );
+
+    // 3. Хелпер: Функция расчета позиции точки в любой момент времени
+    // (Используем замыкание: adjustedStart, adjustedEnd, endRad берутся из кода выше)
+    const getWavePoint = (time: number) => {
+        // База на прямой линии
+        const currentBase = Vector2.lerp(adjustedStart, adjustedEnd, time);
+
+        // Смещение (Синус)
+        const maxAmp = 80;
+        const magnitude = Math.sin(time * Math.PI) * maxAmp;
+
+        // Вектор смещения (по нормали, которую мы нашли раньше)
+        const offsetVec = Vector2.fromRadians(endRad).scale(magnitude);
+
+        // Итоговая точка
+        return currentBase.add(offsetVec);
+    };
+
+    // 4. СВЯЗЫВАЕМ ЗЕЛЕНУЮ СТРЕЛКУ (Reactive)
+    // Motion Canvas будет вызывать эту функцию каждый кадр
+    normalArrow().points(() => {
+        const time = t(); // Читаем сигнал
+        const currentBase = Vector2.lerp(adjustedStart, adjustedEnd, time);
+        const tip = getWavePoint(time);
+        return [currentBase, tip];
+    });
+
+    // 5. СВЯЗЫВАЕМ КРАСНЫЙ СЛЕД (Reactive Trace)
+    // Генерируем массив точек от 0 до текущего t
+    waveTrace().points(() => {
+        const time = t();
+        const path: Vector2[] = [];
+        const step = 0.01; // Детализация линии (меньше = плавее)
+
+        for (let i = 0; i <= time; i += step) {
+            path.push(getWavePoint(i));
+        }
+        path.push(getWavePoint(time)); // Обязательно добавляем самый кончик
+
+        return path;
+    });
+
+    yield* t(1, 2, easeInOutCubic);
+    yield* waitFor(0.5);
+    yield* t(0, 1.5, easeInOutCubic);
+    yield* waitFor(0.2);
+    yield* t(0.5, 0.4);
+    yield* t(0.8, 0.4);
+    yield* t(1, 0.4);
+
+    yield* normalArrow().opacity(0, 0.5);
+
+    yield* waitFor(1);
+
+    const examples = [
+        { start: new Vector2(2, 1), end: new Vector2(7, 4) }, // Наш основной (из примера)
+        { start: new Vector2(-4, -2), end: new Vector2(-1, 2) }, // В другом квадранте
+        { start: new Vector2(-3, 3), end: new Vector2(1, 3) }, // Горизонтальный
+        { start: new Vector2(6, -3), end: new Vector2(6, 2) }, // Вертикальный
+        { start: new Vector2(0, -4), end: new Vector2(4, -1) }, // Короткий
+    ];
+
+    const examplesGroup = createRef<Layout>();
+    view.add(<Layout ref={examplesGroup} />);
+
+    yield* t(0, 0.5);
+
+    // Скрываем "одиночные" элементы предыдущего шага, чтобы не мешали
+    // (Если они еще видны)
+
+    yield* all(
+        sliderContainer().opacity(1, 0.5),
+        normalArrow().opacity(0), // Скрываем старую стрелку совсем
+    );
+    const animations: ThreadGenerator[] = [];
+    examples.forEach((ex, index) => {
+        // --- А. Расчет геометрии ---
+        const start = ex.start.scale(system().spacing());
+        const end = ex.end.scale(system().spacing());
+
+        const diff = end.sub(start);
+        const dir = diff.normalized;
+
+        const radius = 15;
+        const gap = 5;
+        const totalOffset = radius + gap;
+
+        const adjStart = start.add(dir.scale(totalOffset));
+        const adjEnd = end.sub(dir.scale(totalOffset));
+
+        const angleRad = Math.atan2(dir.y, dir.x) - Math.PI / 2;
+
+        // --- Б. Хелпер для расчета волны ---
+        const getPoint = (time: number) => {
+            const base = Vector2.lerp(adjStart, adjEnd, time);
+            const amp = 80;
+            const mag = Math.sin(time * Math.PI) * amp;
+            const offset = Vector2.fromRadians(angleRad).scale(mag);
+            return base.add(offset);
+        };
+
+        // --- В. Создаем визуальные элементы ---
+        const arrowRef = createRef<Line>();
+        const traceRef = createRef<Line>();
+        const startDot = createRef<Circle>();
+        const endDot = createRef<Circle>();
+
+        examplesGroup().add(
+            <>
+                <Circle
+                    ref={startDot}
+                    position={start}
+                    size={30}
+                    fill="#FFF"
+                    scale={0}
+                />
+                <Circle
+                    ref={endDot}
+                    position={end}
+                    size={30}
+                    fill="#FF647F"
+                    scale={0}
+                />
+
+          
+                <Line
+                    points={[adjStart, adjEnd]}
+                    stroke="#333"
+                    lineWidth={2}
+                    lineDash={[5, 5]}
+                    zIndex={-2}
+                />
+
+       
+                <Line
+                    ref={traceRef}
+                    points={() => {
+                        const time = t();
+                        const path: Vector2[] = [];
+                        const step = 0.02;
+                        for (let i = 0; i <= time; i += step)
+                            path.push(getPoint(i));
+                        path.push(getPoint(time));
+                        return path;
+                    }}
+                    stroke="#ff5555"
+                    lineWidth={4}
+                    zIndex={-1}
+                />
+
+               
+                <Line
+                    ref={arrowRef}
+                    points={() => {
+                        const time = t();
+                        const base = Vector2.lerp(adjStart, adjEnd, time);
+                        const tip = getPoint(time);
+                        return [base, tip];
+                    }}
+                    stroke="#A6E22E"
+                    lineWidth={4}
+                    endArrow
+                    arrowSize={15}
+                    opacity={0}
+                />
+            </>,
+        );
+
+     
+        animations.push(
+            (function* () {
+            
+                yield* waitFor(index * 0.1);
+
+                yield* all(
+                    startDot().scale(1, 0.4, createEaseOutBack(1.5)),
+                    endDot().scale(1, 0.4, createEaseOutBack(1.5)),
+                    arrowRef().opacity(1, 0.4),
+                );
+            })(),
+        );
+    });
+
+   
+    yield* all(...animations);
+
+
+    yield* waitFor(0.5);
+
+   
+    yield* t(1, 2, easeInOutCubic);
+    yield* waitFor(0.5);
+    yield* t(0, 1.5, easeInOutCubic);
+    yield* waitFor(0.2);
+    yield* t(0.5, 0.4);
+    yield* t(0.8, 0.4);
+    yield* t(1, 0.4);
+
+    yield* waitFor(1);
 });

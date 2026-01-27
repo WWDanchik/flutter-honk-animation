@@ -18,7 +18,7 @@ export default makeProject({
     scenes: [
         browserScroll,
         demo,
-        math,
+    
         cartesianSystemExample,
         particles,
 

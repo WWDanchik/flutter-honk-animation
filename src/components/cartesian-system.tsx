@@ -150,6 +150,7 @@ export class CartesianSystem extends Node {
             this.xGroup().add(
                 <Node
                     x={() => i * this.spacing()}
+                    scale={0}
                     opacity={() =>
                         Math.abs(i * this.spacing()) > this.viewWidth / 2
                             ? 0
@@ -180,6 +181,7 @@ export class CartesianSystem extends Node {
             if (i === 0) return;
             this.yGroup().add(
                 <Node
+                    scale={0}
                     y={() => -i * this.spacing()}
                     opacity={() =>
                         Math.abs(i * this.spacing()) > this.viewHeight / 2
