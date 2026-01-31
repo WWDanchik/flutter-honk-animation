@@ -6,7 +6,7 @@ import {
     Node,
     Path,
     Rect,
-    Txt
+    Txt,
 } from "@motion-canvas/2d";
 import {
     all,
@@ -14,7 +14,7 @@ import {
     easeInOutExpo,
     Reference,
     useLogger,
-    waitFor
+    waitFor,
 } from "@motion-canvas/core";
 import phone from "../assets/phone.png"; // Твоя картинка рамки
 import { HonkParticle } from "../honk-particles";
@@ -30,10 +30,10 @@ export default makeScene2D(function* (view) {
     const backgroundRef = createRef<Rect>();
     view.add(
         <Rect
-            width={1600}
-            height={900}
+            width={view.width() - 500}
+            height={view.height() - 500}
             fill={"#1e1e1e"}
-            radius={20}
+            radius={40}
             clip
             shadowBlur={40}
             shadowColor={"rgba(0,0,0,0.5)"}
@@ -47,6 +47,7 @@ export default makeScene2D(function* (view) {
                                 clip={true}
                                 width={490}
                                 height={1030}
+                                scale={2}
                                 radius={80}
                                 fill={"#FFFFFF"}
                                 layout
@@ -217,6 +218,7 @@ export default makeScene2D(function* (view) {
                                 minHeight={1000}
                                 fill={"#222222"}
                                 opacity={0}
+                                scale={2}
                             />
                             <Node>
                                 <Img src={phone} height={view.height()} />
@@ -233,7 +235,7 @@ export default makeScene2D(function* (view) {
                     </Node>
                 </Camera>
             </Rect>
-        </Rect>
+        </Rect>,
     );
 
     cameraMotion().scene().position(view.size().div(2));
@@ -241,7 +243,7 @@ export default makeScene2D(function* (view) {
     yield* waitFor(0.5);
     yield* all(
         cameraMotion().centerOn(honkBtnRef(), 1, easeInOutExpo),
-        cameraMotion().zoom(1.3, 1, easeInOutExpo)
+        cameraMotion().zoom(1.3, 1, easeInOutExpo),
     );
 
     yield* honkBtnRef().scale(0.8, 0.3).to(1, 0.3);
@@ -249,7 +251,7 @@ export default makeScene2D(function* (view) {
     yield* all(
         cameraMotion().reset(0.5, easeInOutExpo),
         waitFor(0.2),
-        runParticle(honkBtnRef, avatarRef, particleLayer, cameraMotion)
+        runParticle(honkBtnRef, avatarRef, particleLayer, cameraMotion),
     );
 
     yield* waitFor(0.5);
@@ -260,7 +262,7 @@ export default makeScene2D(function* (view) {
         backgroundRef().radius(0, 1),
         overlayRef().opacity(1, 0.5),
         cameraMotion().zoom(12, 1),
-        cameraMotion().rotation(90, 1)
+        cameraMotion().rotation(90, 1),
     );
 
     yield* all(cameraMotion().zoom(10, 1), cameraMotion().rotation(90, 1));
@@ -270,7 +272,7 @@ function* runParticle(
     honkBtnRef: Reference<Rect>,
     avatarRef: Reference<Circle>,
     particleLayer: Reference<Node>,
-    cameraMotion: Reference<Camera>
+    cameraMotion: Reference<Camera>,
 ): Generator<void> {
     const btnWorldPos = honkBtnRef().absolutePosition();
     const avatarWorldPos = avatarRef().absolutePosition();
@@ -293,7 +295,7 @@ function* runParticle(
             startPos,
             targetPos,
             randomSticker,
-            createRef<Txt>()
+            createRef<Txt>(),
         );
         logger.debug(
             JSON.stringify({
@@ -301,7 +303,7 @@ function* runParticle(
                 targetPos,
                 progress: particle.progress,
                 curveHeight: particle.curveHeight,
-            })
+            }),
         );
         particles.push(particle);
     }

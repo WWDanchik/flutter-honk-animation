@@ -6,6 +6,9 @@ import {
     Line,
     Circle,
     Layout,
+    Node,
+    Img,
+    Camera,
 } from "@motion-canvas/2d";
 import {
     all,
@@ -23,23 +26,55 @@ import {
     delay,
     tween,
     sin,
-    ThreadGenerator, // Для эффекта "Pop"
+    ThreadGenerator,
 } from "@motion-canvas/core";
 import { CartesianSystem } from "../components/cartesian-system";
+import phone from "../assets/phone.png";
 
+const CAMERA_ZOOM = 2.37;
 export default makeScene2D(function* (view) {
     const system = createRef<CartesianSystem>();
     const sineProgress = createSignal(0);
     const sinRef = createRef<Line>();
-
+    const cameraPhoneRef = createRef<Camera>();
+    const cameraCartesianSystemRef = createRef<Camera>();
+    const overlayRef = createRef<Rect>();
+    const contentRef = createRef<Node>();
     view.add(
-        <CartesianSystem
-            ref={system}
-            width={view.width()}
-            height={view.height()}
-            spacing={100}
-        />,
+        <Rect fill={"#222222"} width={view.width()} height={view.height()}>
+            <Camera ref={cameraCartesianSystemRef}>
+                <Rect width={view.width()} height={view.height()} clip>
+                    <Node scale={1} rotation={90} ref={contentRef}>
+                        <CartesianSystem
+                            ref={system}
+                            width={view.width() / CAMERA_ZOOM}
+                            height={view.height() / CAMERA_ZOOM}
+                            spacing={100}
+                        />
+                    </Node>
+                    <Rect
+                        clip={false}
+                        radius={80}
+                        layout
+                        direction={"column"}
+                        ref={overlayRef}
+                        minWidth={470}
+                        minHeight={1000}
+                        fill={"#0e0d0d"}
+                        opacity={0}
+                        scale={2}
+                    />
+                    <Node>
+                        <Img src={phone} height={view.height()} />
+                    </Node>
+                </Rect>
+            </Camera>
+        </Rect>,
     );
+
+    cameraCartesianSystemRef().scene().position(view.size().div(2));
+    cameraCartesianSystemRef().zoom(CAMERA_ZOOM);
+    cameraCartesianSystemRef().rotation(90);
 
     yield* system().setup();
     yield* waitFor(0.5);
@@ -53,10 +88,10 @@ export default makeScene2D(function* (view) {
     yield* waitFor(0.3);
 
     const vecEnd = yield* system().explainPhysicalVector(
-        7,
-        4,
+        6,
+        3,
         "#FF647F",
-        "End(7,4)",
+        "End(6,4)",
     );
 
     yield* waitFor(0.5);
@@ -65,7 +100,7 @@ export default makeScene2D(function* (view) {
     const dotEnd = createRef<Circle>();
     const lerpGroup = createRef<Rect>();
 
-    view.add(
+    contentRef().add(
         <Rect ref={lerpGroup}>
             <Circle
                 ref={dotStart}
@@ -143,10 +178,10 @@ export default makeScene2D(function* (view) {
     const sliderWidth = 500;
     const sliderWrapper = createRef<Rect>();
 
-    view.add(
+    contentRef().add(
         <Rect
             ref={sliderGroup}
-            y={350}
+            y={250}
             layout
             direction="column"
             alignItems="center"
@@ -251,7 +286,7 @@ export default makeScene2D(function* (view) {
     yield* sliderGroup().opacity(0, 0.8, easeInOutCubic);
     const wave = yield* system().spawnDynamicSine(
         new Vector2(2, 1),
-        new Vector2(7, 4),
+        new Vector2(6, 3),
         0,
         system().spacing(),
     );
@@ -280,7 +315,7 @@ export default makeScene2D(function* (view) {
         delay(
             moveDuration * 0.6,
             all(
-                system().spacing(400, 1.2, easeInOutExpo),
+                system().spacing(380, 1.2, easeInOutExpo),
                 system().tricksFontSize(30, 1.2, easeInOutExpo),
             ),
         ),
@@ -636,7 +671,7 @@ export default makeScene2D(function* (view) {
     ];
 
     const examplesGroup = createRef<Layout>();
-    view.add(<Layout ref={examplesGroup} />);
+    contentRef().add(<Layout ref={examplesGroup} />);
 
     yield* t(0, 0.5);
 
@@ -697,7 +732,6 @@ export default makeScene2D(function* (view) {
                     scale={0}
                 />
 
-          
                 <Line
                     points={[adjStart, adjEnd]}
                     stroke="#333"
@@ -706,7 +740,6 @@ export default makeScene2D(function* (view) {
                     zIndex={-2}
                 />
 
-       
                 <Line
                     ref={traceRef}
                     points={() => {
@@ -723,7 +756,6 @@ export default makeScene2D(function* (view) {
                     zIndex={-1}
                 />
 
-               
                 <Line
                     ref={arrowRef}
                     points={() => {
@@ -741,10 +773,8 @@ export default makeScene2D(function* (view) {
             </>,
         );
 
-     
         animations.push(
             (function* () {
-            
                 yield* waitFor(index * 0.1);
 
                 yield* all(
@@ -756,13 +786,10 @@ export default makeScene2D(function* (view) {
         );
     });
 
-   
     yield* all(...animations);
-
 
     yield* waitFor(0.5);
 
-   
     yield* t(1, 2, easeInOutCubic);
     yield* waitFor(0.5);
     yield* t(0, 1.5, easeInOutCubic);
@@ -772,4 +799,14 @@ export default makeScene2D(function* (view) {
     yield* t(1, 0.4);
 
     yield* waitFor(1);
+
+    yield* all(
+        cameraCartesianSystemRef().zoom(1, 1),
+
+        system().viewWidth(2000, 0.5),
+        overlayRef().opacity(1, 1),
+        cameraCartesianSystemRef().rotation(0, 1),
+    );
+
+    yield* waitFor(10);
 });

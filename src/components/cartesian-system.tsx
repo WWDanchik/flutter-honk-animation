@@ -62,30 +62,30 @@ export class CartesianSystem extends Node {
     public contentGroup = createRef<Node>();
     public container = createRef<Node>();
 
-    public readonly viewWidth: number;
-    public readonly viewHeight: number;
     public spacing: SimpleSignal<number>;
     public tricksFontSize = createSignal(16);
     public usePiLabels = createSignal(false);
+    public viewWidth: SimpleSignal<number>;
+    public viewHeight: SimpleSignal<number>;
 
     constructor(props: CartesianSystemProps) {
         super(props);
-        this.viewWidth = props.width;
-        this.viewHeight = props.height;
+        this.viewWidth = createSignal(props.width);
+        this.viewHeight = createSignal(props.height);
         this.spacing = createSignal(props.spacing ?? 80);
 
         this.add(
             <Node ref={this.container}>
                 <Rect
-                    width={this.viewWidth}
-                    height={this.viewHeight}
+                    width={() => this.viewWidth()}
+                    height={() => this.viewHeight()}
                     fill={"#222222"}
                 />
 
                 <Grid
                     ref={this.grid}
-                    width={this.viewWidth}
-                    height={this.viewHeight}
+                    width={() => this.viewWidth()}
+                    height={() => this.viewHeight()}
                     spacing={() => this.spacing()}
                     stroke={"#444"}
                     lineWidth={1}
@@ -98,9 +98,9 @@ export class CartesianSystem extends Node {
 
                 <Line
                     ref={this.yAxis}
-                    points={[
-                        [0, this.viewHeight / 2],
-                        [0, -this.viewHeight / 2],
+                    points={() => [
+                        [0, this.viewHeight() / 2],
+                        [0, -this.viewHeight() / 2],
                     ]}
                     stroke={"#FFF"}
                     lineWidth={4}
@@ -111,9 +111,9 @@ export class CartesianSystem extends Node {
                 />
                 <Line
                     ref={this.xAxis}
-                    points={[
-                        [-this.viewWidth / 2, 0],
-                        [this.viewWidth / 2, 0],
+                    points={() => [
+                        [-this.viewWidth() / 2, 0],
+                        [this.viewWidth() / 2, 0],
                     ]}
                     stroke={"#FFF"}
                     lineWidth={4}
@@ -142,8 +142,8 @@ export class CartesianSystem extends Node {
 
     private generateTicks() {
         const tickLen = 20;
-        const maxStepsX = Math.ceil(this.viewWidth / 2 / 50);
-        const maxStepsY = Math.ceil(this.viewHeight / 2 / 50);
+        const maxStepsX = Math.ceil(this.viewWidth() / 2 / 50);
+        const maxStepsY = Math.ceil(this.viewHeight() / 2 / 50);
         range(-maxStepsX, maxStepsX + 1).forEach((i) => {
             if (i === 0) return;
 
@@ -152,7 +152,7 @@ export class CartesianSystem extends Node {
                     x={() => i * this.spacing()}
                     scale={0}
                     opacity={() =>
-                        Math.abs(i * this.spacing()) > this.viewWidth / 2
+                        Math.abs(i * this.spacing()) > this.viewWidth() / 2
                             ? 0
                             : 1
                     }
@@ -184,7 +184,7 @@ export class CartesianSystem extends Node {
                     scale={0}
                     y={() => -i * this.spacing()}
                     opacity={() =>
-                        Math.abs(i * this.spacing()) > this.viewHeight / 2
+                        Math.abs(i * this.spacing()) > this.viewHeight() / 2
                             ? 0
                             : 1
                     }
@@ -711,7 +711,7 @@ export class CartesianSystem extends Node {
                     text={label}
                     fill={color}
                     fontFamily={"JetBrains Mono"}
-                    fontSize={32}
+                    fontSize={28}
                     scale={0}
                     position={pFull.add([0, -40])}
                 />

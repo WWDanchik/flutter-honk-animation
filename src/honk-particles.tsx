@@ -81,7 +81,7 @@ export class HonkParticle {
 
     
         this.visual.position(finalPos);
-        this.visual.scale(curveT * 3); 
+        this.visual.scale(curveT * 6); 
         this.visual.opacity(1);    
         
 

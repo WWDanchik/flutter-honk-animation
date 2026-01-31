@@ -14,10 +14,10 @@ export default makeScene2D(function* (view) {
         <Camera ref={cameraRef}>
             <Rect
                 ref={browserRef}
-                width={1600}
-                height={900}
+                width={view.width() - 500}
+                height={view.height() - 500}
                 fill={"#1e1e1e"}
-                radius={20}
+                radius={40}
                 clip
                 shadowBlur={40}
                 shadowColor={"rgba(0,0,0,0.5)"}
