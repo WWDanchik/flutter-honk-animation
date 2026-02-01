@@ -642,12 +642,18 @@ export class CartesianSystem extends Node {
         };
     }
 
-    public *explainPhysicalVector(
+  public *explainPhysicalVector(
         x: number,
         y: number,
         color: string,
         label: string,
+        duration: number = 3.3, // <--- 1. Новый аргумент (дефолт 3.3 сек)
     ) {
+        // 2. Считаем коэффициент. 
+        // Если duration = 3.3, то s = 1 (стандарт). 
+        // Если duration = 1.65, то s = 0.5 (в 2 раза быстрее).
+        const s = duration / 3.3;
+
         const origin = this.c2s(0, 0);
         const pX = this.c2s(x, 0);
         const pFull = this.c2s(x, y);
@@ -679,7 +685,7 @@ export class CartesianSystem extends Node {
                     fill={"#46D9FF"}
                     fontFamily={"JetBrains Mono"}
                     fontSize={24}
-                    scale={0} // Скрыт (масштаб 0)
+                    scale={0}
                     position={origin.add(pX).div(2).add([0, 40])}
                 />
 
@@ -729,33 +735,37 @@ export class CartesianSystem extends Node {
             </Node>,
         );
 
-        yield* dot().scale(1, 0.3, easeInOutCubic);
+        // 3. ВЕЗДЕ УМНОЖАЕМ ВРЕМЯ НА s
+        
+        yield* dot().scale(1, 0.3 * s, easeInOutCubic);
 
         yield* all(
-            dot().position(pX, 0.6, easeInOutCubic),
-            lineX().end(1, 0.6, easeInOutCubic),
+            dot().position(pX, 0.6 * s, easeInOutCubic),
+            lineX().end(1, 0.6 * s, easeInOutCubic),
         );
-        yield* labelX().scale(1, 0.2, createEaseOutBack(1.5));
-        yield* waitFor(0.1);
+        yield* labelX().scale(1, 0.2 * s, createEaseOutBack(1.5));
+        
+        // Паузы тоже масштабируем, чтобы ритм сохранялся
+        yield* waitFor(0.1 * s);
 
         yield* all(
-            dot().position(pFull, 0.6, easeInOutCubic),
-            lineY().end(1, 0.6, easeInOutCubic),
+            dot().position(pFull, 0.6 * s, easeInOutCubic),
+            lineY().end(1, 0.6 * s, easeInOutCubic),
         );
-        yield* labelY().scale(1, 0.2, createEaseOutBack(1.5));
-        yield* waitFor(0.1);
+        yield* labelY().scale(1, 0.2 * s, createEaseOutBack(1.5));
+        yield* waitFor(0.1 * s);
 
-        yield* vectorArrow().end(1, 0.4, easeInOutCubic);
-        yield* mainLabel().scale(1, 0.3, createEaseOutBack(1.5));
+        yield* vectorArrow().end(1, 0.4 * s, easeInOutCubic);
+        yield* mainLabel().scale(1, 0.3 * s, createEaseOutBack(1.5));
 
         yield* all(
-            lineX().end(0, 0.5, easeInOutCubic),
-            labelX().scale(0, 0.3),
+            lineX().end(0, 0.5 * s, easeInOutCubic),
+            labelX().scale(0, 0.3 * s),
 
-            lineY().end(0, 0.5, easeInOutCubic),
-            labelY().scale(0, 0.3),
+            lineY().end(0, 0.5 * s, easeInOutCubic),
+            labelY().scale(0, 0.3 * s),
 
-            dot().scale(0, 0.3),
+            dot().scale(0, 0.3 * s),
         );
 
         return {
