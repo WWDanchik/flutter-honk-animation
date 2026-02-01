@@ -67,12 +67,14 @@ export class CartesianSystem extends Node {
     public usePiLabels = createSignal(false);
     public viewWidth: SimpleSignal<number>;
     public viewHeight: SimpleSignal<number>;
+    public radius:SimpleSignal<number>
 
     constructor(props: CartesianSystemProps) {
         super(props);
         this.viewWidth = createSignal(props.width);
         this.viewHeight = createSignal(props.height);
         this.spacing = createSignal(props.spacing ?? 80);
+        this.radius = createSignal(0)
 
         this.add(
             <Node ref={this.container}>
@@ -80,6 +82,7 @@ export class CartesianSystem extends Node {
                     width={() => this.viewWidth()}
                     height={() => this.viewHeight()}
                     fill={"#222222"}
+                    radius={() => this.radius()}
                 />
 
                 <Grid

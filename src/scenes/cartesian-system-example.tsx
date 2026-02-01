@@ -27,6 +27,7 @@ import {
     tween,
     sin,
     ThreadGenerator,
+    easeOutExpo,
 } from "@motion-canvas/core";
 import { CartesianSystem } from "../components/cartesian-system";
 import phone from "../assets/phone.png";
@@ -41,17 +42,17 @@ export default makeScene2D(function* (view) {
     const overlayRef = createRef<Rect>();
     const contentRef = createRef<Node>();
     view.add(
-        <Rect fill={"#222222"} width={view.width()} height={view.height()}>
+        <Rect fill={"#DEE2E6"} width={view.width()} height={view.height()}>
             <Camera ref={cameraCartesianSystemRef}>
                 <Rect width={view.width()} height={view.height()} clip>
-                    <Node scale={1} rotation={90} ref={contentRef}>
+                    <Rect scale={1} rotation={90} ref={contentRef}>
                         <CartesianSystem
                             ref={system}
                             width={view.width() / CAMERA_ZOOM}
                             height={view.height() / CAMERA_ZOOM}
                             spacing={100}
                         />
-                    </Node>
+                    </Rect>
                     <Rect
                         clip={false}
                         radius={80}
@@ -311,7 +312,7 @@ export default makeScene2D(function* (view) {
         wave.end(new Vector2(2, 0), moveDuration, easeInOutExpo),
 
         wave.frequency(2 * Math.PI, moveDuration, easeInOutExpo),
-        wave.amplitude(400, moveDuration * 0.8, easeInOutExpo),
+        wave.amplitude(380, moveDuration * 0.8, easeInOutExpo),
         delay(
             moveDuration * 0.6,
             all(
@@ -800,13 +801,13 @@ export default makeScene2D(function* (view) {
 
     yield* waitFor(1);
 
+    const pop = createEaseOutBack(1.2);
+
     yield* all(
-        cameraCartesianSystemRef().zoom(1, 1),
-
-        system().viewWidth(2000, 0.5),
-        overlayRef().opacity(1, 1),
-        cameraCartesianSystemRef().rotation(0, 1),
+        cameraCartesianSystemRef().zoom(1, 1, pop),
+        system().viewWidth(2000, 0.5, easeOutExpo),
+        overlayRef().opacity(1, 1, easeOutExpo),
+        cameraCartesianSystemRef().rotation(0, 1, pop),
+        system().radius(80, 1, pop),
     );
-
-    yield* waitFor(10);
 });
