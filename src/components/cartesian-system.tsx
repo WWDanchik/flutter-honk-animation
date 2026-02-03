@@ -67,14 +67,14 @@ export class CartesianSystem extends Node {
     public usePiLabels = createSignal(false);
     public viewWidth: SimpleSignal<number>;
     public viewHeight: SimpleSignal<number>;
-    public radius:SimpleSignal<number>
+    public radius: SimpleSignal<number>;
 
     constructor(props: CartesianSystemProps) {
         super(props);
         this.viewWidth = createSignal(props.width);
         this.viewHeight = createSignal(props.height);
         this.spacing = createSignal(props.spacing ?? 80);
-        this.radius = createSignal(0)
+        this.radius = createSignal(0);
 
         this.add(
             <Node ref={this.container}>
@@ -217,27 +217,37 @@ export class CartesianSystem extends Node {
         return new Vector2(x * this.spacing(), -y * this.spacing());
     }
 
-    public *setup() {
+    public *setup(duration: number = 2.1) {
+        const s = duration / 2.1;
+
         yield* all(
-            this.grid().start(0, 0.8, easeInOutCubic),
-            this.grid().end(1, 0.8, easeInOutCubic),
+            this.grid().start(0, 0.8 * s, easeInOutCubic),
+            this.grid().end(1, 0.8 * s, easeInOutCubic),
         );
+
         yield* all(
-            this.xAxis().start(0, 0.5, easeInOutCubic),
-            this.xAxis().end(1, 0.5, easeInOutCubic),
-            this.yAxis().start(0, 0.5, easeInOutCubic),
-            this.yAxis().end(1, 0.5, easeInOutCubic),
+            this.xAxis().start(0, 0.5 * s, easeInOutCubic),
+            this.xAxis().end(1, 0.5 * s, easeInOutCubic),
+            this.yAxis().start(0, 0.5 * s, easeInOutCubic),
+            this.yAxis().end(1, 0.5 * s, easeInOutCubic),
         );
+
         yield* all(
             ...this.xGroup()
                 .children()
                 .map((c) =>
-                    delay(Math.abs(c.x()) * 0.0005, c.scale(1, 0.3, softBack)),
+                    delay(
+                        Math.abs(c.x()) * (0.0005 * s),
+                        c.scale(1, 0.3 * s, softBack),
+                    ),
                 ),
             ...this.yGroup()
                 .children()
                 .map((c) =>
-                    delay(Math.abs(c.y()) * 0.0005, c.scale(1, 0.3, softBack)),
+                    delay(
+                        Math.abs(c.y()) * (0.0005 * s),
+                        c.scale(1, 0.3 * s, softBack),
+                    ),
                 ),
         );
     }
@@ -642,15 +652,15 @@ export class CartesianSystem extends Node {
         };
     }
 
-  public *explainPhysicalVector(
+    public *explainPhysicalVector(
         x: number,
         y: number,
         color: string,
         label: string,
         duration: number = 3.3, // <--- 1. Новый аргумент (дефолт 3.3 сек)
     ) {
-        // 2. Считаем коэффициент. 
-        // Если duration = 3.3, то s = 1 (стандарт). 
+        // 2. Считаем коэффициент.
+        // Если duration = 3.3, то s = 1 (стандарт).
         // Если duration = 1.65, то s = 0.5 (в 2 раза быстрее).
         const s = duration / 3.3;
 
@@ -736,7 +746,7 @@ export class CartesianSystem extends Node {
         );
 
         // 3. ВЕЗДЕ УМНОЖАЕМ ВРЕМЯ НА s
-        
+
         yield* dot().scale(1, 0.3 * s, easeInOutCubic);
 
         yield* all(
@@ -744,7 +754,7 @@ export class CartesianSystem extends Node {
             lineX().end(1, 0.6 * s, easeInOutCubic),
         );
         yield* labelX().scale(1, 0.2 * s, createEaseOutBack(1.5));
-        
+
         // Паузы тоже масштабируем, чтобы ритм сохранялся
         yield* waitFor(0.1 * s);
 

@@ -8,6 +8,7 @@ import {
     Circle,
     Txt,
     Camera,
+    Line,
 } from "@motion-canvas/2d";
 import {
     createRef,
@@ -17,45 +18,117 @@ import {
     easeInOutCubic,
     DEFAULT,
     createEaseOutBack,
+    Vector2,
+    createSignal,
+    map,
+    range,
+    linear,
+    easeInBounce,
+    easeInExpo,
+    easeInOutExpo,
+    easeOutQuad,
 } from "@motion-canvas/core";
-import phone from "../assets/phone.png";
 import { CartesianSystem } from "../components/cartesian-system";
+import phone from "../assets/phone.png";
 
+import grid1 from "../assets/grid-1.png";
+import grid2 from "../assets/grid-2.png";
+import grid3 from "../assets/grid-3.png";
+import grid4 from "../assets/grid-4.png";
+import grid5 from "../assets/grid-5.png";
+import grid6 from "../assets/grid-6.png";
+import grid7 from "../assets/grid-7.png";
+import grid8 from "../assets/grid-8.png";
+import grid9 from "../assets/grid-9.png";
+import grid10 from "../assets/grid-10.png";
+import grid11 from "../assets/grid-11.png";
+import grid12 from "../assets/grid-12.png";
+import grid13 from "../assets/grid-13.png";
+import grid14 from "../assets/grid-14.png";
+import grid15 from "../assets/grid-15.png";
+import grid16 from "../assets/grid-16.png";
+import grid17 from "../assets/grid-17.png";
+import grid18 from "../assets/grid-18.png";
+import grid19 from "../assets/grid-19.png";
+
+const allGrids = [
+    grid1,
+    grid2,
+    grid3,
+    grid4,
+    grid5,
+    grid6,
+    grid7,
+    grid8,
+    grid9,
+    grid10,
+    grid11,
+    grid12,
+    grid13,
+    grid14,
+    grid15,
+    grid16,
+    grid17,
+    grid18,
+    grid19,
+];
 const step1_Empty = ``;
 
-const step2_Class = `class HonkParticle {
+const step2_import = `import 'package:vector_math/vector_math.dart';`;
+
+const step2_Class = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
 
 }`;
 
-const step3_Props = `class HonkParticle {
+const step3_Props = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
   Vector2 start;
   Vector2 target;
-  Vector2 pos;
   double progress = 0.0;
   double speed = 0.015;
   double curveHeight = 50;
+  Vector2 pos;
+}`;
+const getStep3_Props = (
+    val: number,
+) => `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
+  Vector2 start;
+  Vector2 target;
+  double progress = ${val.toFixed(3)};
+  double speed = 0.015;
+  double curveHeight = 50;
+  Vector2 pos;
 }`;
 
-const step4_MethodStub = `class HonkParticle {
+const step4_MethodStub = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
   Vector2 start;
   Vector2 target;
-  Vector2 pos;
   double progress = 0.0;
   double speed = 0.015;
   double curveHeight = 50;
+  Vector2 pos;
 
   void update() {
     
   }
 }`;
 
-const step5_Linear = `class HonkParticle {
+const step5_Linear = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
   Vector2 start;
   Vector2 target;
-  Vector2 pos;
   double progress = 0.0;
   double speed = 0.015;
   double curveHeight = 50;
+  Vector2 pos;
 
   void update() {
     progress += speed;
@@ -66,13 +139,15 @@ const step5_Linear = `class HonkParticle {
   }
 }`;
 
-const step6_Perp = `class HonkParticle {
+const step6_Perp = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
   Vector2 start;
   Vector2 target;
-  Vector2 pos;
   double progress = 0.0;
   double speed = 0.015;
   double curveHeight = 50;
+  Vector2 pos;
 
   void update() {
     progress += speed;
@@ -87,13 +162,15 @@ const step6_Perp = `class HonkParticle {
   }
 }`;
 
-const step7_Sine = `class HonkParticle {
+const step7_Sine = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
   Vector2 start;
   Vector2 target;
-  Vector2 pos;
   double progress = 0.0;
   double speed = 0.015;
   double curveHeight = 50;
+  Vector2 pos;
 
   void update() {
     progress += speed;
@@ -112,13 +189,15 @@ const step7_Sine = `class HonkParticle {
   }
 }`;
 
-const step8_Final = `class HonkParticle {
+const step8_Final = `import 'package:vector_math/vector_math.dart';
+
+class HonkParticle {
   Vector2 start;
   Vector2 target;
-  Vector2 pos;
   double progress = 0.0;
   double speed = 0.015;
   double curveHeight = 50;
+  Vector2 pos;
 
   void update() {
     progress += speed;
@@ -167,6 +246,7 @@ export default makeScene2D(function* (view) {
     const system = createRef<CartesianSystem>();
     const overlayRef = createRef<Rect>();
 
+    const screensRef = createRef<Rect>();
     view.add(
         <Rect width={view.width()} height={view.height()} fill={cBg}>
             <MotionLayout
@@ -336,21 +416,59 @@ export default makeScene2D(function* (view) {
                     alignItems="center"
                 >
                     <Rect>
-                        <Rect
-                            layout={false}
-                            width={911}
-                            height={1975}
-                            clip
-                            radius={40}
-                        >
-                            <Camera ref={phoneCamera}>
-                                <CartesianSystem
-                                    ref={system}
-                                    width={view.width() * 2}
-                                    height={view.height() * 2}
-                                    spacing={100}
-                                />
-                            </Camera>
+                        <Rect width={911} height={1975} layout={false} clip>
+                            <Rect
+                                width={911}
+                                height={1975}
+                                radius={80}
+                                layout={false}
+                                scale={1}
+                                ref={screensRef}
+                            >
+                                {range(60).map((i) => {
+                                    const isMainFrame = i === 0;
+                                    const width = 911;
+                                    const gap = 40;
+                                    const bgImage =
+                                        allGrids[
+                                            Math.min(i, allGrids.length - 1)
+                                        ];
+                                    return (
+                                        <Rect
+                                            key={`${i}`}
+                                            layout={false}
+                                            width={width}
+                                            height={1975}
+                                            radius={80}
+                                            clip
+                                            x={i * (width + gap)}
+                                            fill={"#222222"}
+                                            lineWidth={2}
+                                            opacity={1}
+                                        >
+                                            {isMainFrame ? (
+                                                <Camera ref={phoneCamera}>
+                                                    <CartesianSystem
+                                                        ref={system}
+                                                        width={view.width() * 2}
+                                                        height={
+                                                            view.height() * 2
+                                                        }
+                                                        spacing={100}
+                                                    />
+                                                </Camera>
+                                            ) : (
+                                                <Img
+                                                    src={bgImage}
+                                                    width={width}
+                                                    height={1977}
+                                                    radius={80}
+                                                />
+                                            )}
+                                        </Rect>
+                                    );
+                                })}
+                            </Rect>
                         </Rect>
 
                         <Rect
@@ -365,7 +483,7 @@ export default makeScene2D(function* (view) {
                             scale={2}
                             ref={overlayRef}
                         />
-                        <Node>
+                        <Node zIndex={10}>
                             <Img src={phone} height={view.height()} />
                         </Node>
                     </Rect>
@@ -374,7 +492,6 @@ export default makeScene2D(function* (view) {
         </Rect>,
     );
 
-    yield* waitFor(1);
     system().radius(40);
 
     yield* codeContainerRef().width(2200, 1.5, easeOutExpo);
@@ -415,12 +532,13 @@ export default makeScene2D(function* (view) {
     yield* waitFor(0.5);
 
     yield* all(
-        codeRef().code(step2_Class, 0.8, easeInOutCubic),
-        lineNumbersRef().text(getNumbers(step2_Class), 0.8, easeInOutCubic),
+        codeRef().code(step2_import, 0.8, easeInOutCubic),
+        lineNumbersRef().text(getNumbers(step2_import), 0.8, easeInOutCubic),
         overlayRef().opacity(0, 0.8, easeInOutCubic),
-        system().setup(),
+        system().setup(1),
     );
 
+    yield* codeRef().code(step2_Class, 0.8, easeInOutCubic);
     yield* all(
         codeRef().code(step3_Props, 0.8, easeInOutCubic),
         lineNumbersRef().text(getNumbers(step3_Props), 0.8, easeInOutCubic),
@@ -465,23 +583,19 @@ export default makeScene2D(function* (view) {
         dotStart().scale(1, 0.5, createEaseOutBack(1.5)),
     );
 
-    yield* waitFor(0.3);
-
-    yield* waitFor(0.8);
     yield* codeRef().selection(DEFAULT, 1.0);
 
-    yield* waitFor(0.8);
     yield* codeRef().selection(
         codeRef().findAllRanges(/Vector2 target;/gi),
         1.0,
     );
 
-    yield* all(phoneCamera().zoom(1.2, 0.5), phoneCamera().x(350, 0.5));
+    yield* all(phoneCamera().zoom(1.2, 0.5), phoneCamera().x(400, 0.5));
     const vecTarget = yield* system().explainPhysicalVector(
         6,
         3,
         "#FF647F",
-        "Target(6,4)",
+        "Target(6,3)",
         1,
     );
 
@@ -498,13 +612,209 @@ export default makeScene2D(function* (view) {
     yield* all(
         vecTarget.arrow().opacity(0, 0.4),
 
-        vecTarget.label().x(vecTarget.label().position().x - 80, 0.4),
+        vecTarget.label().x(vecTarget.label().position().x + 80, 0.4),
         vecTarget.label().y(vecTarget.label().position().y + 80, 0.4),
 
         dotEnd().scale(1, 0.5, createEaseOutBack(1.5)),
     );
 
-    yield* waitFor(1.5);
+    yield* waitFor(1);
+    yield* codeRef().selection(DEFAULT, 1.0);
+
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/double progress = 0.0;/gi),
+        1.0,
+    );
+
+    const trackLine = createRef<Line>();
+    lerpGroup().add(
+        <Line
+            ref={trackLine}
+            points={[vecStart.pixelPos, vecStart.pixelPos]}
+            stroke={"#666"}
+            lineWidth={4}
+            lineDash={[15, 15]}
+            zIndex={-1}
+        />,
+    );
+
+    yield* trackLine().points(
+        [vecStart.pixelPos, vecTarget.pixelPos],
+        0.8,
+        easeInOutCubic,
+    );
+
+    const t = createSignal(0);
+    yield* codeRef().code(() => getStep3_Props(t()), 0.5, easeInOutCubic);
+    const ghostDot = createRef<Circle>();
+    lerpGroup().add(
+        <Circle
+            ref={ghostDot}
+            size={25}
+            fill={"#ff00ff"}
+            position={() =>
+                Vector2.lerp(vecStart.pixelPos, vecTarget.pixelPos, t())
+            }
+        >
+            <Txt
+                text={() => `t: ${t().toFixed(3)}`}
+                fill={"#ff00ff"}
+                y={-45}
+                fontSize={24}
+                fontFamily={"JetBrains Mono"}
+            />
+        </Circle>,
+    );
+
+    const sliderGroup = createRef<Rect>();
+    const sliderContainer = createRef<Rect>();
+    const sliderWidth = 500;
+    const sliderWrapper = createRef<Rect>();
+
+    codeContainerRef().add(
+        <Rect
+            ref={sliderGroup}
+            y={700}
+            x={0}
+            scale={3}
+            layout={false}
+            direction="column"
+            alignItems="center"
+            padding={[30, 50]}
+            fill={"#141414"}
+            stroke={"#333"}
+            lineWidth={2}
+            radius={24}
+            opacity={0}
+            zIndex={100}
+            shadowBlur={20}
+            shadowColor={"rgba(0,0,0,0.5)"}
+            width={700}
+            height={80}
+        >
+            <Rect ref={sliderWrapper} height={40}>
+                <Rect
+                    ref={sliderContainer}
+                    width={sliderWidth}
+                    layout={false}
+                    opacity={1}
+                >
+                    <Rect
+                        width={sliderWidth}
+                        height={8}
+                        fill="#333"
+                        radius={4}
+                    />
+                    <Rect
+                        offsetX={-1}
+                        x={-sliderWidth / 2}
+                        width={() => map(0, sliderWidth, t())}
+                        height={8}
+                        fill="#ff00ff"
+                        radius={4}
+                    />
+                    <Circle
+                        size={28}
+                        fill="#141414"
+                        stroke="#ff00ff"
+                        lineWidth={4}
+                        position={() => [
+                            map(-sliderWidth / 2, sliderWidth / 2, t()),
+                            0,
+                        ]}
+                    />
+                    <Txt
+                        text="0.0"
+                        fill="#666"
+                        fontSize={20}
+                        fontFamily="JetBrains Mono"
+                        x={-sliderWidth / 2 - 40}
+                        y={0}
+                    />
+                    <Txt
+                        text="1.0"
+                        fill="#666"
+                        fontSize={20}
+                        fontFamily="JetBrains Mono"
+                        x={sliderWidth / 2 + 40}
+                        y={0}
+                    />
+                </Rect>
+            </Rect>
+        </Rect>,
+    );
+
+    yield* all(sliderGroup().opacity(1, 1));
+
+    // t(0.285);
+    // yield waitFor(10);
+    yield* t(1, 3);
+    yield* t(0, 3);
+
+    yield* all(codeRef().selection(DEFAULT, 1.0), sliderGroup().opacity(0, 1));
+
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/double speed = 0.015;/gi),
+        1.0,
+    );
+
+    const count = 60;
+    const width = 911;
+    const gap = 40;
+    const targetScale = 0.5;
+
+    const lastScreenX = (count - 1) * (width + gap);
+
+    const targetX = -(lastScreenX * targetScale);
+
+    yield* all(
+        screensRef().scale(targetScale, 3.5, easeInOutExpo),
+        screensRef().x(targetX, 3.5, easeInOutExpo),
+    );
+    yield* screensRef().scale(1, 0.5, easeOutQuad);
+    yield* screensRef().x(1, 0.5, easeOutQuad);
+    yield* waitFor(0.5);
+
+    yield* all(screensRef().x(0, 0), screensRef().scale(1, 0));
+    yield* waitFor(0.5);
+
+    const oneFrameDist = width + gap;
+    // --- 1. РАЗОБЛАЧЕНИЕ (Медленно) ---
+    // Сдвигаем ровно на ОДИН кадр. 
+    yield* screensRef().x(-oneFrameDist, 0.8, easeInOutCubic);
+    yield* waitFor(0.3);
+     yield* screensRef().x(-oneFrameDist*2, 0.8, easeInOutCubic);
+    yield* waitFor(0.3);
+
+    // --- 2. НАБОР СКОРОСТИ (Средне) ---
+    // Проезжаем до 5-го кадра.
+    // Лента все еще "едет", мы видим черные полосы.
+    yield* screensRef().x(-oneFrameDist * 5, 1.5, linear);
+
+    // --- 3. ПРЕВРАЩЕНИЕ В ВИДЕО (Быстро) ---
+    // Мы остановились на 5-м кадре. 
+    // Теперь вместо того, чтобы "ехать" дальше, мы начинаем мгновенно 
+    // подменять позицию. Зазоры исчезают, появляется плавное движение.
+    
+    for (let i = 5; i < 60; i++) {
+        // Мгновенный перенос (как проектор переключил кадр)
+        screensRef().x(-oneFrameDist * i); 
+        
+        // Пауза между кадрами (0.033 = 30 FPS)
+        // Если хочешь быстрее/медленнее, меняй это число
+        yield* waitFor(0.033); 
+    }
+
+    yield* waitFor(1);
+    
+    // Сброс в начало
+    yield* screensRef().x(0, 0);
+
+    yield* waitFor(0.6);
+
+    yield* screensRef().x(0, 3.5, easeInOutExpo);
+
+    yield* screensRef().scale(1, 0.8, easeOutExpo);
 
     yield* all(
         codeRef().code(step4_MethodStub, 0.8, easeInOutCubic),
@@ -515,39 +825,31 @@ export default makeScene2D(function* (view) {
         ),
     );
 
-    yield* waitFor(2);
-    // Step 5: Linear Movement logic
-    // Тут мы показываем, что сначала считаем просто прямую линию
+    yield* waitFor(1);
+
     yield* all(
         codeRef().code(step5_Linear, 1.0, easeInOutCubic),
         lineNumbersRef().text(getNumbers(step5_Linear), 1.0, easeInOutCubic),
     );
-    yield* waitFor(1.5); // Пауза, чтобы прочитать про Vector2.mix
+    yield* waitFor(1.5);
 
-    // Step 6: Perpendicular calculation
-    // Добавляем расчет направления и перпендикуляра
     yield* all(
         codeRef().code(step6_Perp, 1.0, easeInOutCubic),
         lineNumbersRef().text(getNumbers(step6_Perp), 1.0, easeInOutCubic),
     );
     yield* waitFor(1.5);
 
-    // Step 7: Sine Wave Logic
-    // Добавляем синус
     yield* all(
         codeRef().code(step7_Sine, 1.0, easeInOutCubic),
         lineNumbersRef().text(getNumbers(step7_Sine), 1.0, easeInOutCubic),
     );
     yield* waitFor(1.5);
 
-    // Step 8: Final Position
-    // Суммируем всё
     yield* all(
         codeRef().code(step8_Final, 1.0, easeInOutCubic),
         lineNumbersRef().text(getNumbers(step8_Final), 1.0, easeInOutCubic),
     );
 
-    // Финальная пауза, чтобы насладиться кодом
     yield* waitFor(3);
 
     yield* all(phoneCamera().zoom(1.5, 1), phoneCamera().x(200, 1));
