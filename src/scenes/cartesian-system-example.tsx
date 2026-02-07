@@ -594,7 +594,7 @@ export default makeScene2D(function* (view) {
         .add(
             <Line
                 ref={waveTrace}
-                points={[adjustedStart]} // Начальная точка
+                points={[adjustedStart]}
                 stroke="#ff5555"
                 lineWidth={4}
                 zIndex={-1}

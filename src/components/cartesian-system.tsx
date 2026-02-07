@@ -51,6 +51,13 @@ export interface SineWaveControls {
     end: SimpleSignal<Vector2>; // <--- Новый сигнал
     line: Reference<Line>;
     distanceLine: Reference<Line>;
+    amplitudeLine: Reference<Line>;
+    amplitudeLineTxt: Reference<Txt>;
+    amplitudeLineTxtOpacity: SimpleSignal<number>;
+    amplitudeLineTxtScale: SimpleSignal<number>;
+    dot: Reference<Circle>;
+    dotProgress: SimpleSignal<number>;
+    dotTxt:Reference<Txt>
 }
 
 export class CartesianSystem extends Node {
@@ -824,15 +831,52 @@ export class CartesianSystem extends Node {
         const frequency = createSignal(initialFreq);
         const amplitude = createSignal(initialAmp);
         const phase = createSignal(0);
+        const dotProgress = createSignal(0);
 
         const sineLine = createRef<Line>();
         const distanceLine = createRef<Line>();
+        const amplitudeLine = createRef<Line>();
+        const amplitudeLineTxt = createRef<Txt>();
+        const dot = createRef<Circle>();
+        const dotTxt = createRef<Txt>();
+        const amplitudeLineTxtOpacity = createSignal(0);
+        const amplitudeLineTxtScale = createSignal(0.7);
+        const getSinePosition = (t: number) => {
+            const s = startSig();
+            const e = endSig();
+            const startPixel = this.c2s(s.x, s.y);
+            const endPixel = this.c2s(e.x, e.y);
 
+            const diff = endPixel.sub(startPixel);
+
+            // Защита от деления на ноль, если start == end
+            if (diff.magnitude < 0.001) return startPixel;
+
+            const direction = diff.normalized;
+            const normal = new Vector2(direction.y, -direction.x);
+
+            const freqVal = frequency();
+            const ampVal = amplitude();
+            const phaseVal = phase();
+
+            // Базовая позиция на прямой (lerp)
+            const basePos = Vector2.lerp(startPixel, endPixel, t);
+
+            // Расчет синуса
+            const errorAtEnd = Math.sin(1 * freqVal + phaseVal); // Коррекция как в линии
+            const rawSine = Math.sin(t * freqVal + phaseVal);
+            const correctedSine = rawSine - errorAtEnd * t;
+
+            // Смещение по нормали
+            const offset = normal.scale(correctedSine * ampVal);
+
+            return basePos.add(offset);
+        };
         this.contentGroup().add(
             <>
                 <Line
                     ref={distanceLine}
-                    opacity={0}
+                    opacity={0.3}
                     stroke={"#ff5555"}
                     lineWidth={4}
                     points={() => [
@@ -840,6 +884,83 @@ export class CartesianSystem extends Node {
                         this.c2s(endSig().x, endSig().y),
                     ]}
                 />
+                <Txt
+                    ref={amplitudeLineTxt}
+                    opacity={() => amplitudeLineTxtOpacity()}
+                    scale={() => amplitudeLineTxtScale()}
+                    position={() => {
+                        const s = startSig();
+                        const e = endSig();
+                        const startPixel = this.c2s(s.x, s.y);
+                        const endPixel = this.c2s(e.x, e.y);
+                        const diff = endPixel.sub(startPixel);
+                        const direction = diff.normalized;
+                        const normal = new Vector2(direction.y, -direction.x);
+                        const basePos = Vector2.lerp(
+                            startPixel,
+                            endPixel,
+                            0.55,
+                        );
+
+                        return basePos.add(normal.scale(amplitude() / 2));
+                    }}
+
+                    fontSize={32}
+                    text={() => {
+                        const s = startSig();
+                        const e = endSig();
+                        const startPixel = this.c2s(s.x, s.y);
+                        const endPixel = this.c2s(e.x, e.y);
+                        const diff = endPixel.sub(startPixel);
+                        const direction = diff.normalized;
+                        const normal = new Vector2(direction.y, -direction.x);
+                        const basePos = Vector2.lerp(startPixel, endPixel, 0.5);
+
+                        basePos.add(normal.scale(amplitude() / 2));
+                        (basePos.radians / (Math.PI * 2)) * 360;
+
+                        return `${amplitude().toFixed(0)}`;
+                    }}
+                    fill={"#ff5555"}
+                    rotation={() => {
+                        const s = startSig();
+                        const e = endSig();
+                        const startPixel = this.c2s(s.x, s.y);
+                        const endPixel = this.c2s(e.x, e.y);
+                        const diff = endPixel.sub(startPixel);
+                        const direction = diff.normalized;
+                        const normal = new Vector2(direction.y, -direction.x);
+                        const basePos = Vector2.lerp(startPixel, endPixel, 0.5);
+
+                        basePos.add(normal.scale(amplitude() / 2));
+
+                        return (basePos.radians / (Math.PI * 2)) * 360 + 90;
+                    }}
+                />
+                <Line
+                    ref={amplitudeLine}
+                    opacity={1}
+                    stroke={"#ff5555"}
+                    lineWidth={4}
+                    end={0}
+                    arrowSize={15}
+                    points={() => {
+                        const s = startSig();
+                        const e = endSig();
+                        const startPixel = this.c2s(s.x, s.y);
+                        const endPixel = this.c2s(e.x, e.y);
+                        const diff = endPixel.sub(startPixel);
+                        const direction = diff.normalized;
+                        const normal = new Vector2(direction.y, -direction.x);
+                        const basePos = Vector2.lerp(startPixel, endPixel, 0.5);
+
+                        return [
+                            basePos,
+                            basePos.add(normal.scale(amplitude())),
+                        ];
+                    }}
+                />
+
                 <Line
                     ref={sineLine}
                     stroke={"#ff5555"}
@@ -887,6 +1008,44 @@ export class CartesianSystem extends Node {
                         return points;
                     }}
                 />
+                <Circle
+                    ref={dot}
+                    size={20}
+                    fill="#ffffff"
+                    position={() => getSinePosition(dotProgress())}
+                    opacity={() =>
+                        dotProgress() > 0 && 1
+                    }
+                />
+                <Txt
+                    // Прячем текст вместе с точкой (если она в начале или в конце)
+                    opacity={() =>
+                        dotProgress() > 0 && 1
+                    }
+                    ref={dotTxt}
+                    fontSize={24}
+                    fill={"#ffffff"} // Белый текст
+                    fontFamily={"JetBrains Mono"} // Моноширинный шрифт (чтобы цифры не скакали)
+                    // Позиция: Берем позицию точки + смещаем на 40 пикселей вверх
+                    position={() => getSinePosition(dotProgress()).addY(-40)}
+                    text={() => {
+                        const t = dotProgress();
+                        const freqVal = frequency();
+                        const phaseVal = phase();
+
+                        // --- МАТЕМАТИКА (Копия логики из линии) ---
+                        // Нам нужно "чистое" значение синуса (множитель),
+                        // без умножения на amplitude()
+
+                        const errorAtEnd = Math.sin(1 * freqVal + phaseVal);
+                        const rawSine = Math.sin(t * freqVal + phaseVal);
+                        const correctedSine = rawSine - errorAtEnd * t;
+
+                        // Округляем до 2 знаков (например, "0.85", "-0.12")
+                        // Если нужно от 0 до 1 (инвертировать Y), добавь минус перед correctedSine
+                        return correctedSine.toFixed(2);
+                    }}
+                />
             </>,
         );
 
@@ -900,6 +1059,14 @@ export class CartesianSystem extends Node {
             distanceLine,
             start: startSig,
             end: endSig,
+            amplitudeLine,
+            amplitudeLineTxt,
+            amplitudeLineTxtOpacity,
+            amplitudeLineTxtScale,
+
+            dot,
+            dotProgress,
+            dotTxt
         };
     }
 
