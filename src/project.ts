@@ -13,12 +13,13 @@ import math from "./scenes/math?scene";
 import browserScroll from "./scenes/browser_scroll?scene";
 import cartesianSystemExample from "./scenes/cartesian-system-example?scene";
 import code from "./scenes/code?scene";
+import intro from "./scenes/intro?scene";
 Code.defaultHighlighter = new LezerHighlighter(parser, oneDarkHighlightStyle);
 
 export default makeProject({
     scenes: [
         browserScroll,
-        demo,
+        intro,
         cartesianSystemExample,
         code
     ],
