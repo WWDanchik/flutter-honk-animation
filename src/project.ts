@@ -20,6 +20,7 @@ export default makeProject({
     scenes: [
         browserScroll,
         intro,
+        demo,
         cartesianSystemExample,
         code
     ],

@@ -10,6 +10,7 @@ import {
     Camera,
     Line,
     Path,
+    Video,
 } from "@motion-canvas/2d";
 import {
     createRef,
@@ -41,6 +42,8 @@ import {
 import { CartesianSystem } from "../components/cartesian-system";
 import phone from "../assets/phone.png";
 import { HonkParticle } from "../honk-particles";
+
+import ScreenCaptureVideo from "../assets/Final Animation.mp4";
 
 const STICKERS = ["🦆", "🎺", "💥", "📢", "🚨", "👀", "🧠", "💡"];
 
@@ -239,7 +242,7 @@ export default makeScene2D(function* (view) {
     const newFileEntryRef = createRef<MotionLayout>();
     const lineNumbersRef = createRef<Txt>();
     const phoneCamera = createRef<Camera>();
-
+    const phoneContainerCamera = createRef<Camera>();
     const cBg = "#DEE2E6";
     const cEditorBg = "#1E1E1E";
     const cSidebarBg = "#252526";
@@ -256,7 +259,6 @@ export default makeScene2D(function* (view) {
     const createCarpetRef = createRef<Rect>();
 
     const codeArea = createRef<Node>();
-
 
     const honkBtnRef = createRef<Rect>();
     const avatarRef = createRef<Circle>();
@@ -311,7 +313,13 @@ export default makeScene2D(function* (view) {
                         />
                     </Rect>
 
-                    <MotionLayout layout direction="row" width="100%" grow={1} shrink={1}>
+                    <MotionLayout
+                        layout
+                        direction="row"
+                        width="100%"
+                        grow={1}
+                        shrink={1}
+                    >
                         <Rect
                             width={700}
                             minWidth={700}
@@ -342,12 +350,7 @@ export default makeScene2D(function* (view) {
                                 gap={16}
                             />
                         </Rect>
-                        <Rect
-                            grow={1}
-                            shrink={1}
-                            layout
-                            clip
-                        >
+                        <Rect grow={1} shrink={1} layout clip>
                             {/* Scroll wrapper - Node без layout для позиционирования */}
                             <Node ref={codeArea} y={0}>
                                 {/* Горизонтальный контейнер: Слева цифры, Справа код */}
@@ -444,79 +447,84 @@ export default makeScene2D(function* (view) {
                     justifyContent="center"
                     alignItems="center"
                 >
-                    <Rect>
-                        <Rect width={911} height={1975} layout={false} clip>
+                    <Camera ref={phoneContainerCamera}>
+                        <Rect>
+                            <Rect width={911} height={1975} layout={false} clip>
+                                <Rect
+                                    width={911}
+                                    height={1975}
+                                    radius={80}
+                                    layout={false}
+                                    scale={1}
+                                    ref={screensRef}
+                                >
+                                    {range(67).map((i) => {
+                                        const isMainFrame = i === 0;
+                                        const width = 911;
+                                        const gap = 40;
+                                        const bgImage =
+                                            allGrids[
+                                                Math.min(i, allGrids.length - 1)
+                                            ];
+                                        return (
+                                            <Rect
+                                                key={`${i}`}
+                                                layout={false}
+                                                width={width}
+                                                height={1975}
+                                                radius={80}
+                                                clip
+                                                x={i * (width + gap)}
+                                                fill={"#222222"}
+                                                lineWidth={2}
+                                                opacity={1}
+                                            >
+                                                {isMainFrame ? (
+                                                    <Camera ref={phoneCamera}>
+                                                        <CartesianSystem
+                                                            ref={system}
+                                                            width={
+                                                                view.width() * 2
+                                                            }
+                                                            height={
+                                                                view.height() *
+                                                                2
+                                                            }
+                                                            spacing={100}
+                                                        />
+                                                    </Camera>
+                                                ) : (
+                                                    <Img
+                                                        src={bgImage}
+                                                        width={width}
+                                                        height={1977}
+                                                        radius={80}
+                                                        clip
+                                                    />
+                                                )}
+                                            </Rect>
+                                        );
+                                    })}
+                                </Rect>
+                            </Rect>
+
                             <Rect
-                                width={911}
-                                height={1975}
+                                clip={false}
                                 radius={80}
                                 layout={false}
-                                scale={1}
-                                ref={screensRef}
-                            >
-                                {range(67).map((i) => {
-                                    const isMainFrame = i === 0;
-                                    const width = 911;
-                                    const gap = 40;
-                                    const bgImage =
-                                        allGrids[
-                                            Math.min(i, allGrids.length - 1)
-                                        ];
-                                    return (
-                                        <Rect
-                                            key={`${i}`}
-                                            layout={false}
-                                            width={width}
-                                            height={1975}
-                                            radius={80}
-                                            clip
-                                            x={i * (width + gap)}
-                                            fill={"#222222"}
-                                            lineWidth={2}
-                                            opacity={1}
-                                        >
-                                            {isMainFrame ? (
-                                                <Camera ref={phoneCamera}>
-                                                    <CartesianSystem
-                                                        ref={system}
-                                                        width={view.width() * 2}
-                                                        height={
-                                                            view.height() * 2
-                                                        }
-                                                        spacing={100}
-                                                    />
-                                                </Camera>
-                                            ) : (
-                                                <Img
-                                                    src={bgImage}
-                                                    width={width}
-                                                    height={1977}
-                                                    radius={80}
-                                                    clip
-                                                />
-                                            )}
-                                        </Rect>
-                                    );
-                                })}
-                            </Rect>
+                                direction={"column"}
+                                minWidth={470}
+                                minHeight={1000}
+                                fill={"#0e0d0d"}
+                                opacity={1}
+                                scale={2}
+                                ref={overlayRef}
+                            />
+                            <Node zIndex={1000}>
+                                <Img src={phone} height={view.height()} />
+                            </Node>
                         </Rect>
-
-                        <Rect
-                            clip={false}
-                            radius={80}
-                            layout={false}
-                            direction={"column"}
-                            minWidth={470}
-                            minHeight={1000}
-                            fill={"#0e0d0d"}
-                            opacity={1}
-                            scale={2}
-                            ref={overlayRef}
-                        />
-                        <Node zIndex={1000}>
-                            <Img src={phone} height={view.height()} />
-                        </Node>
-                    </Rect>
+                    </Camera>
                 </MotionLayout>
             </MotionLayout>
         </Rect>,
@@ -524,7 +532,7 @@ export default makeScene2D(function* (view) {
 
     system().radius(40);
     phoneCamera().scene().position(view.size().div(2));
-
+    phoneContainerCamera().scene().position(view.size().div(2));
     yield* codeContainerRef().width(2400, 1.5, easeOutExpo);
     yield* waitFor(0.5);
 
@@ -594,7 +602,6 @@ export default makeScene2D(function* (view) {
         "Start(2,1)",
         1,
     );
-
 
     system()
         .contentGroup()
@@ -1456,7 +1463,7 @@ export default makeScene2D(function* (view) {
     );
 
     codeArea().y(0);
-    
+
     yield* all(
         codeRef().code(``, 0.2, easeInOutCubic),
         lineNumbersRef().text(getNumbers(``), 0.2, easeInOutCubic),
@@ -1573,200 +1580,172 @@ class HonkParticleController extends ChangeNotifier {
     // Добавить UI телефона
     const chatUIRef = createRef<Rect>();
     const dimOverlayRef = createRef<Rect>();
-    
-    screensRef().add(<Node>
-        <Rect
-            ref={chatUIRef}
-            clip={true}
-            width={490}
-            height={1030}
-            scale={2}
-            radius={80}
-            fill={"#FFFFFF"}
-            layout
-            direction={"column"}
-            paddingLeft={38}
-            paddingRight={40}
-            paddingTop={95}
-        >
+    const exampleRef = createRef<Node>();
+    screensRef().add(
+        <Node ref={exampleRef}>
             <Rect
-                width={"100%"}
-                height={80}
-                direction={"row"}
-                alignItems={"center"}
-                justifyContent={"space-between"}
+                ref={chatUIRef}
+                clip={true}
+                width={490}
+                height={1030}
+                scale={2}
+                radius={80}
+                fill={"#FFFFFF"}
+                layout
+                direction={"column"}
+                paddingLeft={38}
+                paddingRight={40}
+                paddingTop={95}
             >
-                <Path
-                    width={40}
-                    height={40}
-                    data="M 15 2 L 5 12 L 15 22"
-                    stroke={"#E5E5EA"}
-                    lineWidth={4}
-                    lineCap={"round"}
-                    lineJoin={"round"}
-                    marginRight={10}
-                />
+                <Rect
+                    width={"100%"}
+                    height={80}
+                    direction={"row"}
+                    alignItems={"center"}
+                    justifyContent={"space-between"}
+                >
+                    <Path
+                        width={40}
+                        height={40}
+                        data="M 15 2 L 5 12 L 15 22"
+                        stroke={"#E5E5EA"}
+                        lineWidth={4}
+                        lineCap={"round"}
+                        lineJoin={"round"}
+                        marginRight={10}
+                    />
+
+                    <Rect
+                        direction={"column"}
+                        alignItems={"center"}
+                        justifyContent={"center"}
+                    >
+                        <Txt
+                            text="Alex"
+                            fill={"black"}
+                            fontSize={20}
+                            fontWeight={700}
+                        />
+                        <Txt
+                            text="Here 23m ago"
+                            fill={"#8e8e93"}
+                            fontSize={14}
+                        />
+                    </Rect>
+
+                    <Circle size={40} fill={"#BDBDBD"} ref={avatarRef}>
+                        <Circle
+                            size={40}
+                            fill={"#BDBDBD"}
+                            clip={true}
+                            shrink={0}
+                            layout={false}
+                        >
+                            <Node x={0} y={-7}>
+                                <Circle size={18} fill={"#EEEEEE"} />
+                            </Node>
+
+                            <Node x={0} y={22}>
+                                <Circle size={36} fill={"#EEEEEE"} />
+                            </Node>
+                        </Circle>
+                    </Circle>
+                </Rect>
 
                 <Rect
                     direction={"column"}
-                    alignItems={"center"}
+                    grow={1}
+                    gap={10}
+                    paddingBottom={20}
                     justifyContent={"center"}
-                >
-                    <Txt
-                        text="Alex"
-                        fill={"black"}
-                        fontSize={20}
-                        fontWeight={700}
-                    />
-                    <Txt
-                        text="Here 23m ago"
-                        fill={"#8e8e93"}
-                        fontSize={14}
-                    />
-                </Rect>
-
-                <Circle
-                    size={40}
-                    fill={"#BDBDBD"}
-                    ref={avatarRef}
-                >
-                    <Circle
-                        size={40}
-                        fill={"#BDBDBD"}
-                        clip={true}
-                        shrink={0}
-                        layout={false}
-                    >
-                        <Node x={0} y={-7}>
-                            <Circle
-                                size={18}
-                                fill={"#EEEEEE"}
-                            />
-                        </Node>
-
-                        <Node x={0} y={22}>
-                            <Circle
-                                size={36}
-                                fill={"#EEEEEE"}
-                            />
-                        </Node>
-                    </Circle>
-                </Circle>
-            </Rect>
-
-            <Rect
-                direction={"column"}
-                grow={1}
-                gap={10}
-                paddingBottom={20}
-                justifyContent={"center"}
-                paddingTop={15}
-            >
-                <Rect
-                    fill={"#F2F2F7"}
-                    radius={20}
-                    width={"100%"}
-                    height={200}
-                />
-
-                <Rect
-                    fill={"#007AFF"}
-                    radius={20}
-                    width={"100%"}
-                    height={180}
-                    alignItems={"center"}
-                    justifyContent={"center"}
+                    paddingTop={15}
                 >
                     <Rect
-                        width={3}
-                        height={30}
-                        fill={"white"}
-                        opacity={0.8}
+                        fill={"#F2F2F7"}
+                        radius={20}
+                        width={"100%"}
+                        height={200}
                     />
+
+                    <Rect
+                        fill={"#007AFF"}
+                        radius={20}
+                        width={"100%"}
+                        height={180}
+                        alignItems={"center"}
+                        justifyContent={"center"}
+                    >
+                        <Rect
+                            width={3}
+                            height={30}
+                            fill={"white"}
+                            opacity={0.8}
+                        />
+                    </Rect>
                 </Rect>
-            </Rect>
-
-            <Rect
-                width={"100%"}
-                height={40}
-                direction={"row"}
-                alignItems={"center"}
-                gap={15}
-                padding={5}
-            >
-                <Rect
-                    size={30}
-                    radius={8}
-                    fill={"#007AFF"}
-                />
-                <Rect
-                    fill={"#E5E5EA"}
-                    size={30}
-                    radius={8}
-                />
-                <Rect
-                    fill={"#E5E5EA"}
-                    size={30}
-                    radius={8}
-                />
-                <Rect
-                    fill={"#E5E5EA"}
-                    size={30}
-                    radius={8}
-                />
-                <Rect
-                    fill={"#E5E5EA"}
-                    size={30}
-                    radius={8}
-                />
 
                 <Rect
-                    padding={[5, 12]}
-                    fill={"#E5E5EA"}
-                    radius={8}
+                    width={"100%"}
+                    height={40}
+                    direction={"row"}
                     alignItems={"center"}
-                    justifyContent={"center"}
-                    ref={honkBtnRef}
+                    gap={15}
+                    padding={5}
                 >
-                    <Txt
-                        text="HONK"
-                        fontSize={18}
-                        fill={"#8E8E93"}
-                        fontWeight={800}
-                    />
-                </Rect>
-                <Rect grow={1} />
-                <IconPlaceholder icon="trash" />
-            </Rect>
+                    <Rect size={30} radius={8} fill={"#007AFF"} />
+                    <Rect fill={"#E5E5EA"} size={30} radius={8} />
+                    <Rect fill={"#E5E5EA"} size={30} radius={8} />
+                    <Rect fill={"#E5E5EA"} size={30} radius={8} />
+                    <Rect fill={"#E5E5EA"} size={30} radius={8} />
 
-            <Keyboard />
-        </Rect>
-        {/* Overlay для затемнения UI - ПОД частицами */}
-        <Rect
-            ref={dimOverlayRef}
-            position={[0, 0]}
-            width={490}
-            height={1030}
-            scale={2}
-            radius={80}
-            fill={"rgba(0,0,0,0.85)"}
-            opacity={0}
-        />
-        {/* Частицы - ПОВЕРХ затемнения */}
-        <Rect
-            position={[0, 0]}
-            height={"100%"}
-            width={"100%"}
-            layout={false}
-            ref={particleLayer}
-        />
-    </Node>);
+                    <Rect
+                        padding={[5, 12]}
+                        fill={"#E5E5EA"}
+                        radius={8}
+                        alignItems={"center"}
+                        justifyContent={"center"}
+                        ref={honkBtnRef}
+                    >
+                        <Txt
+                            text="HONK"
+                            fontSize={18}
+                            fill={"#8E8E93"}
+                            fontWeight={800}
+                        />
+                    </Rect>
+                    <Rect grow={1} />
+                    <IconPlaceholder icon="trash" />
+                </Rect>
+
+                <Keyboard />
+            </Rect>
+            {/* Overlay для затемнения UI - ПОД частицами */}
+            <Rect
+                ref={dimOverlayRef}
+                position={[0, 0]}
+                width={490}
+                height={1030}
+                scale={2}
+                radius={80}
+                fill={"rgba(0,0,0,0.85)"}
+                opacity={0}
+            />
+            {/* Частицы - ПОВЕРХ затемнения */}
+            <Rect
+                position={[0, 0]}
+                height={"100%"}
+                width={"100%"}
+                layout={false}
+                ref={particleLayer}
+            />
+        </Node>,
+    );
 
     yield* overlayRef().opacity(0, 0.5);
 
     // Запустить частицы до 80% и затемнить UI
     yield* waitFor(0.3);
-    
+
     // Запуск частиц
     const btnWorldPos = honkBtnRef().absolutePosition();
     const avatarWorldPos = avatarRef().absolutePosition();
@@ -1780,7 +1759,8 @@ class HonkParticleController extends ChangeNotifier {
 
     // Создать все частицы сразу с рандомным stopProgress
     for (let i = 0; i < particleCount; i++) {
-        const randomSticker = STICKERS[Math.floor(Math.random() * STICKERS.length)];
+        const randomSticker =
+            STICKERS[Math.floor(Math.random() * STICKERS.length)];
         const particle = new HonkParticle(
             particleLayer(),
             startPos,
@@ -1792,12 +1772,14 @@ class HonkParticleController extends ChangeNotifier {
         particleData.push({ particle, stopProgress });
     }
 
-
     let running = true;
     while (running) {
         running = false;
         for (const data of particleData) {
-            if (!data.particle.isDead && data.particle.progress < data.stopProgress) {
+            if (
+                !data.particle.isDead &&
+                data.particle.progress < data.stopProgress
+            ) {
                 data.particle.update();
                 running = true;
             }
@@ -1807,7 +1789,6 @@ class HonkParticleController extends ChangeNotifier {
 
     yield* waitFor(0.5);
 
-
     yield* dimOverlayRef().opacity(1, 0.5, easeOutCubic);
 
     yield* waitFor(0.3);
@@ -1815,43 +1796,48 @@ class HonkParticleController extends ChangeNotifier {
     // Линии от "particles = []" к частицам
     // Добавляем линии в particleLayer чтобы координаты совпадали
     const lines: Line[] = [];
-    
+
     // Позиция кода в мировых координатах, потом в локальные particleLayer
-    const codeWorldPos = codeRef().absolutePosition().add(new Vector2(300, 300));
+    const codeWorldPos = codeRef()
+        .absolutePosition()
+        .add(new Vector2(300, 300));
     // toLocalMatrix уже объявлен выше
     const codeLocalPos = codeWorldPos.transformAsPoint(toLocalMatrix);
 
     for (const data of particleData) {
         // Позиция частицы уже в локальных координатах particleLayer
         const particlePos = data.particle.ref().position();
-        
+
         const lineRef = createRef<Line>();
-        
+
         particleLayer().add(
             <Line
                 ref={lineRef}
                 points={[codeLocalPos, particlePos]}
                 stroke={"#fff"}
                 lineWidth={3}
-                
                 end={0}
-            />
+            />,
         );
         lines.push(lineRef());
     }
-
-
 
     yield* waitFor(0.3);
 
     // Частицы летят обратно к старту
     yield* all(
         ...particleData.map((data, i) =>
-            delay(i * 0.06, data.particle.ref().position(startPos, 0.7, easeInOutCubic))
+            delay(
+                i * 0.06,
+                data.particle.ref().position(startPos, 0.7, easeInOutCubic),
+            ),
         ),
         ...particleData.map((data, i) =>
-            delay(i * 0.06 + 0.3, data.particle.ref().scale(0, 0.4, easeInCubic))
-        )
+            delay(
+                i * 0.06 + 0.3,
+                data.particle.ref().scale(0, 0.4, easeInCubic),
+            ),
+        ),
     );
 
     // Снять эффекты
@@ -1873,7 +1859,11 @@ class HonkParticleController extends ChangeNotifier {
     yield* waitFor(0.3);
 
     // Выделить emit
-    yield* codeRef().selection(codeRef().findAllRanges(/void emit\(\{[\s\S]*?\);\n  \}/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/void emit\(\{[\s\S]*?\);\n  \}/gm),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
     yield* codeRef().selection(DEFAULT, 0.3);
 
@@ -1888,7 +1878,13 @@ class HonkParticleController extends ChangeNotifier {
     yield* waitFor(0.3);
 
     // Выделить tick
-    yield* codeRef().selection(codeRef().findAllRanges(/void tick\(\)[\s\S]*?notifyListeners\(\);\n  \}/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(
+            /void tick\(\)[\s\S]*?notifyListeners\(\);\n  \}/gm,
+        ),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
     yield* codeRef().selection(DEFAULT, 0.3);
 
@@ -2021,13 +2017,16 @@ class HonkParticle {
   }
 }`;
 
-    
     yield* activeFile(fileName, 0.3);
     codeArea().y(0);
 
     yield* all(
         codeRef().code(step_Refactor_Old, 0.5, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Refactor_Old), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Refactor_Old),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* waitFor(0.8);
@@ -2035,17 +2034,29 @@ class HonkParticle {
     // Добавить child и key
     yield* all(
         codeRef().code(step_Refactor_ChildKey, 0.6, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Refactor_ChildKey), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Refactor_ChildKey),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* waitFor(0.3);
 
     // Выделить key
-    yield* codeRef().selection(codeRef().findAllRanges(/final Key key = UniqueKey\(\);/g), 0.4, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/final Key key = UniqueKey\(\);/g),
+        0.4,
+        easeInOutCubic,
+    );
     yield* waitFor(0.8);
 
     // Выделить child
-    yield* codeRef().selection(codeRef().findAllRanges(/Widget child;/g), 0.4, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/Widget child;/g),
+        0.4,
+        easeInOutCubic,
+    );
     yield* waitFor(0.8);
 
     yield* codeRef().selection(DEFAULT, 0.3);
@@ -2055,13 +2066,23 @@ class HonkParticle {
     // Добавить scale и конструктор
     yield* all(
         codeRef().code(step_Refactor_Init, 0.7, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Refactor_Init), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Refactor_Init),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* waitFor(0.3);
 
     // Выделить инициализатор (конструктор)
-    yield* codeRef().selection(codeRef().findAllRanges(/HonkParticle\(\{[\s\S]*?progress = randomRange\(-0\.4, 0\);/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(
+            /HonkParticle\(\{[\s\S]*?progress = randomRange\(-0\.4, 0\);/gm,
+        ),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1.2);
     yield* codeRef().selection(DEFAULT, 0.3);
 
@@ -2073,13 +2094,21 @@ class HonkParticle {
     yield* waitFor(0.3);
 
     // Выделить isDead
-    yield* codeRef().selection(codeRef().findAllRanges(/bool get isDead => progress >= 1;/g), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/bool get isDead => progress >= 1;/g),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
 
     // Выделить метод randomRange
-    yield* codeRef().selection(codeRef().findAllRanges(/static double randomRange[\s\S]*?\}/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/static double randomRange[\s\S]*?\}/gm),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
-    
+
     yield* codeRef().selection(DEFAULT, 0.3);
 
     yield* waitFor(0.8);
@@ -2251,8 +2280,6 @@ class _ParticleOverlayState extends State<ParticleOverlay>
         </MotionLayout>,
     );
 
-  
-
     yield* all(
         modalRef().opacity(0, 0.2),
         modalRef().scale(0.9, 0.2),
@@ -2271,27 +2298,43 @@ class _ParticleOverlayState extends State<ParticleOverlay>
 
     yield* all(
         codeRef().code(step_Overlay_Imports, 0.5, easeInOutCubic),
-        lineNumbersRef().text(getNumbers(step_Overlay_Imports), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Overlay_Imports),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* all(
         codeRef().code(step_Overlay_Class, 0.6, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Overlay_Class), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Overlay_Class),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* waitFor(0.5);
 
     yield* all(
         codeRef().code(step_Overlay_State, 0.6, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Overlay_State), 0.2, easeInOutCubic),
-        codeArea().y(-1120, 0.8, easeInOutCubic)
+        lineNumbersRef().text(
+            getNumbers(step_Overlay_State),
+            0.2,
+            easeInOutCubic,
+        ),
+        codeArea().y(-1120, 0.8, easeInOutCubic),
     );
 
     yield* waitFor(0.5);
 
     yield* all(
         codeRef().code(step_Overlay_Build, 0.8, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Overlay_Build), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Overlay_Build),
+            0.2,
+            easeInOutCubic,
+        ),
         codeArea().y(-2320, 0.8, easeInOutCubic),
     );
 
@@ -2481,7 +2524,6 @@ class ChatScreen extends StatelessWidget {
         activeFile(fileName4, 0.2),
     );
 
-  
     codeArea().y(0);
 
     yield* all(
@@ -2491,10 +2533,13 @@ class ChatScreen extends StatelessWidget {
 
     yield* waitFor(0.5);
 
-
     yield* all(
         codeRef().code(step_Chat_Imports, 0.5, easeInOutCubic),
-        lineNumbersRef().text(getNumbers(step_Chat_Imports), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Chat_Imports),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* all(
@@ -2504,16 +2549,29 @@ class ChatScreen extends StatelessWidget {
 
     yield* waitFor(0.3);
 
-
-    yield* codeRef().selection(codeRef().findAllRanges(/final HonkParticleController _ctrl =[\s\S]*?HonkParticleController\(\);/gm), 0.4, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(
+            /final HonkParticleController _ctrl =[\s\S]*?HonkParticleController\(\);/gm,
+        ),
+        0.4,
+        easeInOutCubic,
+    );
     yield* waitFor(0.8);
 
     // Выделить avatarKey
-    yield* codeRef().selection(codeRef().findAllRanges(/final GlobalKey avatarKey = GlobalKey\(\);/g), 0.4, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/final GlobalKey avatarKey = GlobalKey\(\);/g),
+        0.4,
+        easeInOutCubic,
+    );
     yield* waitFor(0.8);
 
     // Выделить fabKey
-    yield* codeRef().selection(codeRef().findAllRanges(/final GlobalKey fabKey = GlobalKey\(\);/g), 0.4, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/final GlobalKey fabKey = GlobalKey\(\);/g),
+        0.4,
+        easeInOutCubic,
+    );
     yield* waitFor(0.8);
 
     yield* codeRef().selection(DEFAULT, 0.3);
@@ -2523,13 +2581,23 @@ class ChatScreen extends StatelessWidget {
     // getWidgetCenter
     yield* all(
         codeRef().code(step_Chat_Helper, 0.6, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Chat_Helper), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Chat_Helper),
+            0.2,
+            easeInOutCubic,
+        ),
     );
 
     yield* waitFor(0.3);
 
     // Выделить getWidgetCenter
-    yield* codeRef().selection(codeRef().findAllRanges(/Offset\? getWidgetCenter[\s\S]*?size\.height \/ 2\);[\s\S]*?\}/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(
+            /Offset\? getWidgetCenter[\s\S]*?size\.height \/ 2\);[\s\S]*?\}/gm,
+        ),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
     yield* codeRef().selection(DEFAULT, 0.3);
 
@@ -2539,9 +2607,17 @@ class ChatScreen extends StatelessWidget {
     yield* all(
         codeArea().y(-800, 0.6, easeInOutCubic),
         codeRef().code(step_Chat_EmitMethod, 0.7, easeOutCubic),
-        lineNumbersRef().text(getNumbers(step_Chat_EmitMethod), 0.2, easeInOutCubic),
+        lineNumbersRef().text(
+            getNumbers(step_Chat_EmitMethod),
+            0.2,
+            easeInOutCubic,
+        ),
     );
-    yield* codeRef().selection(codeRef().findAllRanges(/void _emitParticles\(\)[\s\S]*?\n  \}/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(/void _emitParticles\(\)[\s\S]*?\n  \}/gm),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
     yield* codeRef().selection(DEFAULT, 0.3);
 
@@ -2557,20 +2633,46 @@ class ChatScreen extends StatelessWidget {
     yield* waitFor(0.3);
 
     // Скролл чтобы видеть emit и build
-    
 
     yield* waitFor(0.3);
 
     // Выделить _emitParticles
-   
 
     // Выделить build
-    yield* codeRef().selection(codeRef().findAllRanges(/@override[\s\S]*?Widget build[\s\S]*?\n  \}/gm), 0.5, easeInOutCubic);
+    yield* codeRef().selection(
+        codeRef().findAllRanges(
+            /@override[\s\S]*?Widget build[\s\S]*?\n  \}/gm,
+        ),
+        0.5,
+        easeInOutCubic,
+    );
     yield* waitFor(1);
 
     yield* codeRef().selection(DEFAULT, 0.3);
 
-    yield* waitFor(2);
+    yield* codeContainerRef().width(0, 1.5, easeOutExpo);
+    yield* waitFor(0.5);
+    exampleRef().remove();
+    system().opacity(0);
+    yield* overlayRef().opacity(0, 0.3);
+    const finalVideoRef = createRef<Video>();
+    screensRef().add(
+        <Video
+            width={911}
+            height={1975}
+            play
+            ref={finalVideoRef}
+            src={ScreenCaptureVideo}
+        />,
+    );
+
+    yield* waitFor(7);
+
+    yield* all(
+        phoneContainerCamera().zoom(10, 1),
+        phoneContainerCamera().rotation(90, 1),
+        overlayRef().opacity(1, 1)
+    );
 });
 
 function FileItem({
@@ -2592,13 +2694,6 @@ function FileItem({
         </MotionLayout>
     );
 }
-
-
-
-
-
-
-
 
 const IconPlaceholder = ({ icon }: { icon?: string }) => (
     <Txt
